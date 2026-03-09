@@ -32,7 +32,14 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("auth/", include(("src.urls", "auth"), namespace="auth")),
+    path("auth/", include(("src.urls.auth_urls", "auth"), namespace="auth")),
+    path("duel/", include(("src.urls.duel_urls", "duel"), namespace="duel")),
+    path("player/", include(("src.urls.player_urls", "player"), namespace="player")),
+    path("game/", include(("src.urls.game_urls", "game"), namespace="game")),
+    path("evidence/", include(("src.urls.evidence_urls", "evidence"), namespace="evidence")),
+    path("dispute/", include(("src.urls.dispute_urls", "dispute"), namespace="dispute")),
+    path("matchmaking/", include(("src.urls.matchmaking_urls", "matchmaking"), namespace="matchmaking")),
+    path("ai/", include(("src.urls.ai_urls", "ai"), namespace="ai")),
     re_path(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     re_path(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 ]
