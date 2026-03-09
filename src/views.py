@@ -51,7 +51,7 @@ def signup(request):
         type=openapi.TYPE_OBJECT,
         properties={
             'message': openapi.Schema(type=openapi.TYPE_STRING),
-            'user_id': openapi.Schema(type=openapi.TYPE_INTEGER),
+            'user_id': openapi.Schema(type=openapi.TYPE_STRING, format='uuid'),
         }
     ))},
     tags=['auth']
@@ -76,7 +76,7 @@ def signin(request):
         type=openapi.TYPE_OBJECT,
         required=['user_id', 'otp'],
         properties={
-            'user_id': openapi.Schema(type=openapi.TYPE_INTEGER),
+            'user_id': openapi.Schema(type=openapi.TYPE_STRING, format='uuid'),
             'otp': openapi.Schema(type=openapi.TYPE_STRING),
             'otp_type': openapi.Schema(type=openapi.TYPE_STRING, enum=['login', 'password_reset'], default='login'),
         },
@@ -112,7 +112,7 @@ def verify_otp(request):
         type=openapi.TYPE_OBJECT,
         required=['user_id', 'otp_type'],
         properties={
-            'user_id': openapi.Schema(type=openapi.TYPE_INTEGER),
+            'user_id': openapi.Schema(type=openapi.TYPE_STRING, format='uuid'),
             'otp_type': openapi.Schema(type=openapi.TYPE_STRING, enum=['login', 'password_reset']),
         },
     ),
@@ -147,7 +147,7 @@ def send_otp(request):
         type=openapi.TYPE_OBJECT,
         properties={
             'message': openapi.Schema(type=openapi.TYPE_STRING),
-            'user_id': openapi.Schema(type=openapi.TYPE_INTEGER),
+            'user_id': openapi.Schema(type=openapi.TYPE_STRING, format='uuid'),
         }
     ))},
     tags=['auth']
@@ -171,7 +171,7 @@ def forgot_password(request):
         type=openapi.TYPE_OBJECT,
         required=['user_id', 'otp', 'new_password'],
         properties={
-            'user_id': openapi.Schema(type=openapi.TYPE_INTEGER),
+            'user_id': openapi.Schema(type=openapi.TYPE_STRING, format='uuid'),
             'otp': openapi.Schema(type=openapi.TYPE_STRING),
             'new_password': openapi.Schema(type=openapi.TYPE_STRING),
         },

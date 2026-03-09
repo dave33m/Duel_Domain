@@ -1,7 +1,9 @@
 from django.db import models
 from django.contrib.auth.models import User
+import uuid
 
 class Player(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     wins = models.IntegerField(default=0)
     losses = models.IntegerField(default=0)
@@ -9,6 +11,7 @@ class Player(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 class Duel(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     player1 = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='duels_as_player1')
     player2 = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='duels_as_player2')
     winner = models.ForeignKey(Player, on_delete=models.SET_NULL, null=True, blank=True, related_name='won_duels')
@@ -22,6 +25,7 @@ class OTP(models.Model):
         ('password_reset', 'Password Reset'),
     ]
     
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     code = models.CharField(max_length=6)
     otp_type = models.CharField(max_length=20, choices=OTP_TYPE_CHOICES, default='login')

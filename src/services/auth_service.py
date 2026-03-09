@@ -26,7 +26,7 @@ class AuthService:
             raise ValueError("Invalid credentials")
         
         OTPService.generate_otp(user, 'login')
-        return {"message": "OTP sent successfully", "user_id": user.id}
+        return {"message": "OTP sent successfully", "user_id": str(user.id)}
     
     @staticmethod
     def verify_otp(user_id, code, otp_type='login'):
@@ -59,7 +59,7 @@ class AuthService:
             raise ValueError("Email not found")
         
         OTPService.generate_otp(user, 'password_reset')
-        return {"message": "Password reset OTP sent successfully", "user_id": user.id}
+        return {"message": "Password reset OTP sent successfully", "user_id": str(user.id)}
     
     @staticmethod
     def reset_password(user_id, otp, new_password):
