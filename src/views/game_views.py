@@ -106,3 +106,29 @@ def delete_game(request, game_id):
         return Response(result, status=status.HTTP_200_OK)
     except ValueError as e:
         return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+
+@swagger_auto_schema(
+    method='get',
+    manual_parameters=[
+        openapi.Parameter('q', openapi.IN_QUERY, type=openapi.TYPE_STRING, required=True),
+        openapi.Parameter('platform', openapi.IN_QUERY, type=openapi.TYPE_STRING, enum=['playstation', 'xbox', 'pc', 'mobile']),
+    ],
+    tags=['game']
+)
+@api_view(['GET'])
+def search_games(request):
+    query = request.GET.get('q', '')
+    platform = request.GET.get('platform')
+
+    if not query:
+        return Response({"error": "Query parameter required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    games = GameService.search_games(query, platform)
+    return Response({
+        "games": [{
+            "id": str(g.id),
+            "name": g.name,
+            "platform": g.platform,
+            "is_active": g.is_active
+        } for g in games]
+    }, status=status.HTTP_200_OK)

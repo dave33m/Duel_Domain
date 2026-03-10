@@ -7,4 +7,5 @@ urlpatterns = [
     path("<uuid:game_id>/", game_views.get_game, name='get-game'),
     path("<uuid:game_id>/update/", game_views.update_game, name='update-game'),
     path("<uuid:game_id>/delete/", game_views.delete_game, name='delete-game'),
+    path("search/", game_views.search_games, name='search-games'),
 ]
