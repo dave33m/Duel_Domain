@@ -56,3 +56,18 @@ class PlayerService:
             "wins": p.wins,
             "losses": p.losses
         } for p in players]
+
+
+    @staticmethod
+    def get_player_stats(player_id):
+        try:
+            player = Player.objects.get(id=player_id)
+            total = player.wins + player.losses
+            return {
+                "wins": player.wins,
+                "losses": player.losses,
+                "total": total,
+                "win_rate": round((player.wins / total * 100), 2) if total > 0 else 0
+            }
+        except Player.DoesNotExist:
+            raise ValueError("Player not found")

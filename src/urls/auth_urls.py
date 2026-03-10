@@ -8,4 +8,7 @@ urlpatterns = [
     path("send-otp/", auth_views.send_otp, name='send-otp'),
     path("forgot-password/", auth_views.forgot_password, name='forgot-password'),
     path("reset-password/", auth_views.reset_password, name='reset-password'),
+    path("users/", auth_views.get_all_users, name='get-all-users'),
+    path("user/<uuid:user_id>/", auth_views.delete_user, name='delete-user'),
+
 ]

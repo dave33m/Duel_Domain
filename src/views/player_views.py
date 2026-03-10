@@ -70,3 +70,14 @@ def search_players(request):
     
     players = PlayerService.search_players(query)
     return Response({"players": players}, status=status.HTTP_200_OK)
+
+@swagger_auto_schema(method='get', tags=['player'])
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_stats(request):
+    try:
+        player = request.user.player
+        stats = PlayerService.get_player_stats(player.id)
+        return Response(stats, status=status.HTTP_200_OK)
+    except ValueError as e:
+        return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)

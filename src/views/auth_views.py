@@ -1,9 +1,11 @@
 from rest_framework.decorators import api_view
+from drf_yasg import openapi
 from rest_framework.response import Response
 from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
 from src.services.auth_service import AuthService
 from src.serializers import (
+
     SignupSerializer, SigninSerializer, VerifyOTPSerializer,
     SendOTPSerializer, ForgotPasswordSerializer, ResetPasswordSerializer
 )
@@ -93,3 +95,23 @@ def reset_password(request):
         return Response(result, status=status.HTTP_200_OK)
     except ValueError as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@swagger_auto_schema(method='get', tags=['auth'])
+@api_view(['GET'])
+def get_all_users(request):
+    try:
+        users = AuthService.get_all_users()
+        return Response({"users": users}, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@swagger_auto_schema(method='delete', tags=['auth'])
+@api_view(['DELETE'])
+def delete_user(request, user_id):
+    try:
+        result = AuthService.delete_user(user_id)
+        return Response(result, status=status.HTTP_200_OK)
+    except ValueError as e:
+        return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
