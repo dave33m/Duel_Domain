@@ -7,4 +7,6 @@ urlpatterns = [
     path("me/update/", player_views.update_profile, name='update-profile'),
     path("leaderboard/", player_views.leaderboard, name='leaderboard'),
     path("search/", player_views.search_players, name='search-players'),
+    path("me/stats/", player_views.my_stats, name='my-stats'),
+  
 ]

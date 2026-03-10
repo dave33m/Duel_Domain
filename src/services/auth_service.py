@@ -1,5 +1,4 @@
-from django.contrib.auth.models import User
-from src.models import Player
+from src.models import User, Player
 from src.services.otp_service import OTPService
 from src.services.jwt_service import JWTService
 
@@ -38,7 +37,7 @@ class AuthService:
         if not OTPService.validate_otp(user, code, otp_type):
             raise ValueError("Invalid or expired OTP")
         
-        token = JWTService.generate_token(user.id, user.username, user.email)
+        token = JWTService.generate_token(str(user.id), user.username, user.email)
         return {"token": token, "username": user.username, "email": user.email}
     
     @staticmethod
@@ -74,3 +73,27 @@ class AuthService:
         user.set_password(new_password)
         user.save()
         return {"message": "Password reset successful"}
+ 
+    @staticmethod
+    def get_all_users():
+        users = User.objects.all().select_related('player')
+        return [{
+            "id": str(u.id),
+            "username": u.username,
+            "email": u.email,
+            "player_id": str(u.player.id) if hasattr(u, 'player') else None,
+            "rating": u.player.rating if hasattr(u, 'player') else 1000,
+            "wins": u.player.wins if hasattr(u, 'player') else 0,
+            "losses": u.player.losses if hasattr(u, 'player') else 0
+        } for u in users]
+
+    @staticmethod
+    def delete_user(user_id):
+        users = User.objects.filter(id=user_id)
+        if not users.exists():
+            raise ValueError("User not found")
+        users.delete()
+        return {"message": "User deleted successfully"}
+
+        
+    
