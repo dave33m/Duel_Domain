@@ -47,3 +47,10 @@ class GameService:
             return {"message": "Game deactivated successfully"}
         except Game.DoesNotExist:
             raise ValueError("Game not found")
+
+    @staticmethod
+    def search_games(query, platform=None):
+        queryset = Game.objects.filter(name__icontains=query, is_active=True)
+        if platform:
+            queryset = queryset.filter(platform=platform)
+        return queryset[:20]
