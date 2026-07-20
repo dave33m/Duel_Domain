@@ -2,6 +2,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+from django.core.exceptions import ObjectDoesNotExist
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from src.services.player_service import PlayerService
@@ -15,8 +16,8 @@ def my_profile(request):
         player = request.user.player
         profile = PlayerService.get_profile(player.id)
         return Response(profile, status=status.HTTP_200_OK)
-    except ValueError as e:
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    except (ValueError, ObjectDoesNotExist) as e:
+        return Response({"error": str(e) or "Player profile not found"}, status=status.HTTP_400_BAD_REQUEST)
 
 @swagger_auto_schema(
     method='get',
@@ -43,8 +44,8 @@ def update_profile(request):
         player = request.user.player
         profile = PlayerService.update_profile(player.id, **serializer.validated_data)
         return Response(profile, status=status.HTTP_200_OK)
-    except ValueError as e:
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    except (ValueError, ObjectDoesNotExist) as e:
+        return Response({"error": str(e) or "Player profile not found"}, status=status.HTTP_400_BAD_REQUEST)
 
 @swagger_auto_schema(
     method='get',
@@ -79,5 +80,5 @@ def my_stats(request):
         player = request.user.player
         stats = PlayerService.get_player_stats(player.id)
         return Response(stats, status=status.HTTP_200_OK)
-    except ValueError as e:
-        return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+    except (ValueError, ObjectDoesNotExist) as e:
+        return Response({"error": str(e) or "Player profile not found"}, status=status.HTTP_404_NOT_FOUND)

@@ -1,4 +1,5 @@
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAdminUser
 from drf_yasg import openapi
 from rest_framework.response import Response
 from rest_framework import status
@@ -98,6 +99,7 @@ def reset_password(request):
 
 @swagger_auto_schema(method='get', tags=['auth'])
 @api_view(['GET'])
+@permission_classes([IsAdminUser])
 def get_all_users(request):
     try:
         users = AuthService.get_all_users()
@@ -107,6 +109,7 @@ def get_all_users(request):
 
 @swagger_auto_schema(method='delete', tags=['auth'])
 @api_view(['DELETE'])
+@permission_classes([IsAdminUser])
 def delete_user(request, user_id):
     try:
         result = AuthService.delete_user(user_id)

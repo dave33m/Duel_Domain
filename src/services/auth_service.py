@@ -1,3 +1,5 @@
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from src.models import User, Player
 from src.services.otp_service import OTPService
 from src.services.jwt_service import JWTService
@@ -9,7 +11,12 @@ class AuthService:
             raise ValueError("Email already exists")
         if User.objects.filter(username=username).exists():
             raise ValueError("Username already exists")
-        
+
+        try:
+            validate_password(password, user=User(username=username, email=email))
+        except DjangoValidationError as e:
+            raise ValueError(" ".join(e.messages))
+
         user = User.objects.create_user(username=username, email=email, password=password)
         Player.objects.create(user=user)
         return {"message": "Sign up successful, welcome to Duel Domain"}
