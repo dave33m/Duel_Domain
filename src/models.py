@@ -65,14 +65,13 @@ class MatchEvidence(models.Model):
 
 class OTP(models.Model):
     OTP_TYPE_CHOICES = [
-        ('login', 'Login'),
         ('password_reset', 'Password Reset'),
     ]
-    
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     code = models.CharField(max_length=6)
-    otp_type = models.CharField(max_length=20, choices=OTP_TYPE_CHOICES, default='login')
+    otp_type = models.CharField(max_length=20, choices=OTP_TYPE_CHOICES, default='password_reset')
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
     is_used = models.BooleanField(default=False)

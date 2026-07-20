@@ -5,7 +5,7 @@ from src.models import OTP
 
 class OTPService:
     @staticmethod
-    def generate_otp(user, otp_type='login'):
+    def generate_otp(user, otp_type='password_reset'):
         code = ''.join([str(random.randint(0, 9)) for _ in range(6)])
         expires_at = timezone.now() + timedelta(minutes=5)
         
@@ -24,7 +24,7 @@ class OTPService:
         return code
     
     @staticmethod
-    def validate_otp(user, code, otp_type='login'):
+    def validate_otp(user, code, otp_type='password_reset'):
         try:
             otp = OTP.objects.get(
                 user=user,

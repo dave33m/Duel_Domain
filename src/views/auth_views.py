@@ -6,8 +6,7 @@ from rest_framework import status
 from drf_yasg.utils import swagger_auto_schema
 from src.services.auth_service import AuthService
 from src.serializers import (
-
-    SignupSerializer, SigninSerializer, VerifyOTPSerializer,
+    SignupSerializer, SigninSerializer,
     SendOTPSerializer, ForgotPasswordSerializer, ResetPasswordSerializer
 )
 
@@ -33,23 +32,6 @@ def signin(request):
     
     try:
         result = AuthService.signin(**serializer.validated_data)
-        return Response(result, status=status.HTTP_200_OK)
-    except ValueError as e:
-        return Response({"error": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
-
-@swagger_auto_schema(method='post', request_body=VerifyOTPSerializer, tags=['auth'])
-@api_view(['POST'])
-def verify_otp(request):
-    serializer = VerifyOTPSerializer(data=request.data)
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    try:
-        result = AuthService.verify_otp(
-            serializer.validated_data['user_id'],
-            serializer.validated_data['otp'],
-            serializer.validated_data.get('otp_type', 'login')
-        )
         return Response(result, status=status.HTTP_200_OK)
     except ValueError as e:
         return Response({"error": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
