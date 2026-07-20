@@ -34,4 +34,5 @@ jobs:
             git pull origin main
             ./venv/bin/pip install -r requirements.txt
             ./venv/bin/python manage.py migrate
+            ./venv/bin/python manage.py collectstatic --noinput
             pm2 restart duel-domain
