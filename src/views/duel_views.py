@@ -2,6 +2,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+from django.core.exceptions import ObjectDoesNotExist
 from drf_yasg.utils import swagger_auto_schema
 from src.services.duel_service import DuelService
 from src.serializers import CreateChallengeSerializer, AcceptChallengeSerializer, SubmitResultSerializer
@@ -25,8 +26,8 @@ def create_challenge(request):
             "message": "Challenge created successfully",
             "duel_id": str(duel.id)
         }, status=status.HTTP_201_CREATED)
-    except ValueError as e:
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    except (ValueError, ObjectDoesNotExist) as e:
+        return Response({"error": str(e) or "Player profile not found"}, status=status.HTTP_400_BAD_REQUEST)
 
 @swagger_auto_schema(method='post', request_body=AcceptChallengeSerializer, tags=['duel'])
 @api_view(['POST'])
@@ -46,8 +47,8 @@ def accept_challenge(request):
             "message": "Challenge accepted successfully",
             "duel_id": str(duel.id)
         }, status=status.HTTP_200_OK)
-    except ValueError as e:
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    except (ValueError, ObjectDoesNotExist) as e:
+        return Response({"error": str(e) or "Player profile not found"}, status=status.HTTP_400_BAD_REQUEST)
 
 @swagger_auto_schema(method='post', request_body=SubmitResultSerializer, tags=['duel'])
 @api_view(['POST'])
@@ -68,8 +69,8 @@ def submit_result(request):
             "message": "Result submitted successfully",
             "status": duel.status
         }, status=status.HTTP_200_OK)
-    except ValueError as e:
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    except (ValueError, ObjectDoesNotExist) as e:
+        return Response({"error": str(e) or "Player profile not found"}, status=status.HTTP_400_BAD_REQUEST)
 
 @swagger_auto_schema(method='get', tags=['duel'])
 @api_view(['GET'])
@@ -86,8 +87,8 @@ def my_duels(request):
                 "created_at": d.created_at
             } for d in duels]
         }, status=status.HTTP_200_OK)
-    except ValueError as e:
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    except (ValueError, ObjectDoesNotExist) as e:
+        return Response({"error": str(e) or "Player profile not found"}, status=status.HTTP_400_BAD_REQUEST)
 
 @swagger_auto_schema(method='get', tags=['duel'])
 @api_view(['GET'])

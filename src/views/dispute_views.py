@@ -2,6 +2,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from rest_framework import status
+from django.core.exceptions import ObjectDoesNotExist
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from src.services.dispute_service import DisputeService
@@ -23,8 +24,8 @@ def flag_dispute(request):
             serializer.validated_data['reason']
         )
         return Response(result, status=status.HTTP_200_OK)
-    except ValueError as e:
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    except (ValueError, ObjectDoesNotExist) as e:
+        return Response({"error": str(e) or "Player profile not found"}, status=status.HTTP_400_BAD_REQUEST)
 
 @swagger_auto_schema(method='get', tags=['dispute'])
 @api_view(['GET'])
@@ -47,8 +48,8 @@ def resolve_dispute(request):
             serializer.validated_data['winner_id']
         )
         return Response(result, status=status.HTTP_200_OK)
-    except ValueError as e:
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    except (ValueError, ObjectDoesNotExist) as e:
+        return Response({"error": str(e) or "Player profile not found"}, status=status.HTTP_400_BAD_REQUEST)
 
 @swagger_auto_schema(
     method='post',
@@ -61,5 +62,5 @@ def cancel_duel(request, duel_id):
     try:
         result = DisputeService.cancel_duel(duel_id, admin=True)
         return Response(result, status=status.HTTP_200_OK)
-    except ValueError as e:
-        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    except (ValueError, ObjectDoesNotExist) as e:
+        return Response({"error": str(e) or "Player profile not found"}, status=status.HTTP_400_BAD_REQUEST)
