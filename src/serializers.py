@@ -9,14 +9,9 @@ class SigninSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
-class VerifyOTPSerializer(serializers.Serializer):
-    user_id = serializers.UUIDField()
-    otp = serializers.CharField(max_length=6)
-    otp_type = serializers.ChoiceField(choices=['login', 'password_reset'], default='login')
-
 class SendOTPSerializer(serializers.Serializer):
     user_id = serializers.UUIDField()
-    otp_type = serializers.ChoiceField(choices=['login', 'password_reset'])
+    otp_type = serializers.ChoiceField(choices=['password_reset'], default='password_reset')
 
 class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()

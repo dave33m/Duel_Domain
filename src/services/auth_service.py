@@ -27,26 +27,13 @@ class AuthService:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
             raise ValueError("Invalid credentials")
-        
+
         if not user.check_password(password):
             raise ValueError("Invalid credentials")
-        
-        OTPService.generate_otp(user, 'login')
-        return {"message": "OTP sent successfully", "user_id": str(user.id)}
-    
-    @staticmethod
-    def verify_otp(user_id, code, otp_type='login'):
-        try:
-            user = User.objects.get(id=user_id)
-        except User.DoesNotExist:
-            raise ValueError("User not found")
-        
-        if not OTPService.validate_otp(user, code, otp_type):
-            raise ValueError("Invalid or expired OTP")
-        
+
         token = JWTService.generate_token(str(user.id), user.username, user.email)
         return {"token": token, "username": user.username, "email": user.email}
-    
+
     @staticmethod
     def send_otp(user_id, otp_type):
         try:
