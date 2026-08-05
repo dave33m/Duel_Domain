@@ -45,6 +45,13 @@ async def accept_challenge(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
+def _rating_change_for(duel, player_id) -> int | None:
+    """Rating change from the given player's own perspective (None if not yet decided)."""
+    if duel.rating_change is None or duel.winner_id is None:
+        return None
+    return duel.rating_change if duel.winner_id == player_id else -duel.rating_change
+
+
 @router.post("/submit-result/", response_model=ResultSubmittedResponse)
 async def submit_result(
     body: SubmitResultRequest,
@@ -53,7 +60,11 @@ async def submit_result(
 ):
     try:
         duel = await DuelService.submit_result(db, body.duel_id, player.id, body.score)
-        return {"message": "Result submitted successfully", "status": duel.status}
+        return {
+            "message": "Result submitted successfully",
+            "status": duel.status,
+            "rating_change": _rating_change_for(duel, player.id),
+        }
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
@@ -64,7 +75,14 @@ async def my_duels(db: AsyncSession = Depends(get_db), player: Player = Depends(
         duels = await DuelService.get_player_duels(db, player.id)
         return {
             "duels": [
-                {"id": str(d.id), "game": d.game.name, "status": d.status, "created_at": d.created_at} for d in duels
+                {
+                    "id": str(d.id),
+                    "game": d.game.name,
+                    "status": d.status,
+                    "rating_change": _rating_change_for(d, player.id),
+                    "created_at": d.created_at,
+                }
+                for d in duels
             ]
         }
     except ValueError as e:

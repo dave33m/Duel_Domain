@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.elo import calculate_elo_change
 from app.models.duel import Duel
 from app.models.player import Player
 
@@ -72,17 +73,29 @@ class DisputeService:
             if duel.winner_id == challenger.id:
                 challenger.wins -= 1
                 opponent.losses -= 1
+                if duel.rating_change:
+                    challenger.rating -= duel.rating_change
+                    opponent.rating += duel.rating_change
             else:
                 opponent.wins -= 1
                 challenger.losses -= 1
+                if duel.rating_change:
+                    opponent.rating -= duel.rating_change
+                    challenger.rating += duel.rating_change
 
         duel.winner_id = winner.id
         if winner.id == challenger.id:
             challenger.wins += 1
             opponent.losses += 1
+            duel.rating_change = calculate_elo_change(challenger.rating, opponent.rating)
+            challenger.rating += duel.rating_change
+            opponent.rating -= duel.rating_change
         else:
             opponent.wins += 1
             challenger.losses += 1
+            duel.rating_change = calculate_elo_change(opponent.rating, challenger.rating)
+            opponent.rating += duel.rating_change
+            challenger.rating -= duel.rating_change
 
         duel.status = "completed"
         await db.commit()

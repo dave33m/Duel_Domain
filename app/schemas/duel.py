@@ -32,12 +32,14 @@ class ChallengeAcceptedResponse(BaseModel):
 class ResultSubmittedResponse(BaseModel):
     message: str
     status: str
+    rating_change: int | None = None
 
 
 class DuelSummary(BaseModel):
     id: str
     game: str
     status: str
+    rating_change: int | None = None
     created_at: datetime
 
 

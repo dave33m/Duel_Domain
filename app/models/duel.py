@@ -24,6 +24,7 @@ class Duel(Base):
     opponent_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
     challenger_submitted: Mapped[bool] = mapped_column(Boolean, default=False)
     opponent_submitted: Mapped[bool] = mapped_column(Boolean, default=False)
+    rating_change: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     accepted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
