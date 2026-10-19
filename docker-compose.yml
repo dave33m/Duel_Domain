@@ -2,6 +2,10 @@
 #   docker compose -p duel-domain up -d --build          (APP_PORT=8000 in .env)
 #   docker compose -p duel-domain-staging up -d --build  (APP_PORT=8001 in .env)
 # Each project gets its own container and its own "data" volume (the SQLite DB).
+#
+# The API listens on localhost only; Caddy on the host terminates HTTPS and proxies to it
+# (see scripts/setup_caddy.sh). Docker bypasses ufw for published ports, so binding to
+# 127.0.0.1 is what actually keeps the raw port off the internet.
 
 services:
   api:
@@ -10,7 +14,7 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:////app/data/db.sqlite3}
     ports:
-      - "${APP_PORT:-8000}:8000"
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-8000}:8000"
     volumes:
       - data:/app/data
     restart: unless-stopped
