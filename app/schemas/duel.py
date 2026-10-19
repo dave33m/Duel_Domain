@@ -2,12 +2,14 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+Score = Field(ge=0, le=999)
 
 
 class CreateChallengeRequest(BaseModel):
     game_id: UUID
-    stake: Decimal = Decimal("0")
+    stake: Decimal = Field(default=Decimal("0"), ge=0, le=Decimal("99999999.99"), max_digits=10, decimal_places=2)
 
 
 class AcceptChallengeRequest(BaseModel):
@@ -15,8 +17,11 @@ class AcceptChallengeRequest(BaseModel):
 
 
 class SubmitResultRequest(BaseModel):
+    """The full scoreline as the submitting player saw it."""
+
     duel_id: UUID
-    score: int
+    my_score: int = Score
+    opponent_score: int = Score
 
 
 class ChallengeCreatedResponse(BaseModel):
@@ -25,6 +30,11 @@ class ChallengeCreatedResponse(BaseModel):
 
 
 class ChallengeAcceptedResponse(BaseModel):
+    message: str
+    duel_id: str
+
+
+class ChallengeCancelledResponse(BaseModel):
     message: str
     duel_id: str
 

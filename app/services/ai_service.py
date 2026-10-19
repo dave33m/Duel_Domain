@@ -26,11 +26,12 @@ class AIService:
     @staticmethod
     def validate_screenshot(image_url: str) -> dict[str, Any]:
         # TODO: Integrate with OCR service (AWS Textract, Google Vision, etc.)
+        # Until then, never report a screenshot as verified.
         return {
-            "valid": True,
-            "confidence": 0.85,
+            "valid": False,
+            "confidence": 0.0,
             "detected_scores": {"player1": None, "player2": None},
-            "message": "Screenshot validation pending AI integration",
+            "message": "Automatic screenshot validation is not available yet",
         }
 
     @staticmethod

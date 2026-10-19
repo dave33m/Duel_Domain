@@ -8,3 +8,5 @@ db.sqlite3
 .idea/
 .vscode/
 DuelVenv/
+.pytest_cache/
+ci.db

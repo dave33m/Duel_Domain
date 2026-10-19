@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.game import Game
@@ -9,11 +9,11 @@ from app.models.game import Game
 class GameService:
     @staticmethod
     async def create_game(db: AsyncSession, name: str, platform: str) -> Game:
-        existing = await db.execute(select(Game).where(Game.name == name, Game.platform == platform))
+        existing = await db.execute(select(Game).where(func.lower(Game.name) == name.strip().lower(), Game.platform == platform))
         if existing.scalar_one_or_none():
             raise ValueError("Game already exists for this platform")
 
-        game = Game(id=uuid.uuid4(), name=name, platform=platform)
+        game = Game(id=uuid.uuid4(), name=name.strip(), platform=platform)
         db.add(game)
         await db.commit()
         await db.refresh(game)
@@ -63,7 +63,7 @@ class GameService:
 
     @staticmethod
     async def search_games(db: AsyncSession, query: str, platform: str | None = None) -> list[Game]:
-        stmt = select(Game).where(Game.name.icontains(query), Game.is_active == True)  # noqa: E712
+        stmt = select(Game).where(Game.name.icontains(query, autoescape=True), Game.is_active == True)  # noqa: E712
         if platform:
             stmt = stmt.where(Game.platform == platform)
         result = await db.execute(stmt.limit(20))

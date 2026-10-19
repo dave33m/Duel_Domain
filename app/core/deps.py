@@ -13,6 +13,23 @@ from app.models.user import User
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
+async def _user_from_token(token: str, db: AsyncSession) -> User | None:
+    """The active user a token belongs to, or None if the token is invalid, revoked or for a disabled account."""
+    try:
+        payload = decode_access_token(token)
+        user_id = uuid.UUID(payload["user_id"])
+        token_version = int(payload.get("ver", 0))
+    except (ValueError, KeyError, TypeError):
+        return None
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if user is None or not user.is_active or token_version != user.token_version:
+        return None
+
+    return user
+
+
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     db: AsyncSession = Depends(get_db),
@@ -20,14 +37,7 @@ async def get_current_user(
     if credentials is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication credentials were not provided.")
 
-    try:
-        payload = decode_access_token(credentials.credentials)
-        user_id = uuid.UUID(payload["user_id"])
-    except (ValueError, KeyError):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
+    user = await _user_from_token(credentials.credentials, db)
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
@@ -57,12 +67,4 @@ async def get_optional_user(
 ) -> User | None:
     if credentials is None:
         return None
-
-    try:
-        payload = decode_access_token(credentials.credentials)
-        user_id = uuid.UUID(payload["user_id"])
-    except (ValueError, KeyError):
-        return None
-
-    result = await db.execute(select(User).where(User.id == user_id))
-    return result.scalar_one_or_none()
+    return await _user_from_token(credentials.credentials, db)

@@ -1,13 +1,23 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    SECRET_KEY: str = "django-insecure-d^+-0+-xx$0*b1_5^!)5+vd1ey(+$)ue=ve+h#t!9_y73bx70-"
-    DEBUG: bool = True
+    # No default: a missing key must stop the app rather than fall back to a public value.
+    SECRET_KEY: str = Field(min_length=32)
+    DEBUG: bool = False
     ALLOWED_HOSTS: str = ""
     DATABASE_URL: str = "sqlite+aiosqlite:///./db.sqlite3"
+
+    # Outgoing email (password reset codes). Leave SMTP_HOST empty to disable sending.
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = "Duel Domain <no-reply@dueldomain.com>"
+    SMTP_USE_TLS: bool = True
 
     @property
     def allowed_hosts_list(self) -> list[str]:

@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_player, get_optional_user
 from app.db.session import get_db
+from app.models.duel import Duel
 from app.models.player import Player
 from app.models.user import User
 from app.schemas.ai import (
@@ -38,5 +40,10 @@ async def validate_screenshot(body: ValidateScreenshotRequest, player: Player = 
 @router.get("/performance/", response_model=PerformanceAnalysisResponse)
 async def performance_analysis(db: AsyncSession = Depends(get_db), player: Player = Depends(get_current_player)):
     """AI-powered performance analysis"""
-    player_history = []
+    result = await db.execute(
+        select(Duel.winner_id)
+        .where(Duel.status == "completed", or_(Duel.challenger_id == player.id, Duel.opponent_id == player.id))
+        .order_by(Duel.completed_at)
+    )
+    player_history = [{"won": winner_id == player.id} for winner_id in result.scalars().all()]
     return AIService.analyze_performance(player_history)

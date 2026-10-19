@@ -27,6 +27,14 @@ def verify_password(password: str, password_hash: str) -> bool:
     return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
 
 
+# Checked against when no user matches, so a failed sign-in takes the same time either way.
+DUMMY_PASSWORD_HASH = hash_password("not-a-real-password")
+
+
+def normalize_email(email: str) -> str:
+    return email.strip().lower()
+
+
 def validate_password_strength(password: str, username: str = "", email: str = "") -> None:
     if len(password) < 8:
         raise ValueError("This password is too short. It must contain at least 8 characters.")
@@ -46,12 +54,13 @@ def validate_password_strength(password: str, username: str = "", email: str = "
             raise ValueError("The password is too similar to the username or email.")
 
 
-def create_access_token(user_id: str, username: str, email: str) -> str:
+def create_access_token(user_id: str, username: str, email: str, token_version: int = 0) -> str:
     now = datetime.now(timezone.utc)
     payload = {
         "user_id": user_id,
         "username": username,
         "email": email,
+        "ver": token_version,
         "iat": now,
         "exp": now + timedelta(days=TOKEN_TTL_DAYS),
     }

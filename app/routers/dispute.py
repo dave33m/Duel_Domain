@@ -43,7 +43,9 @@ async def resolve_dispute(
     admin: User = Depends(get_current_admin),
 ):
     try:
-        return await DisputeService.resolve_dispute(db, body.duel_id, body.winner_id)
+        return await DisputeService.resolve_dispute(
+            db, body.duel_id, body.winner_id, body.challenger_score, body.opponent_score
+        )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
@@ -55,6 +57,6 @@ async def cancel_duel(
     admin: User = Depends(get_current_admin),
 ):
     try:
-        return await DisputeService.cancel_duel(db, duel_id, admin=True)
+        return await DisputeService.cancel_duel(db, duel_id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

@@ -2,9 +2,22 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from app.schemas.auth import Username
+
 
 class UpdateProfileRequest(BaseModel):
-    username: str | None = None
+    username: Username | None = None
+
+
+class PublicPlayerProfileResponse(BaseModel):
+    id: str
+    username: str
+    wins: int
+    losses: int
+    rating: int
+    win_rate: float
+    total_matches: int
+    joined: datetime
 
 
 class PlayerProfileResponse(BaseModel):

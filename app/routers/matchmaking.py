@@ -43,7 +43,7 @@ async def quick_match(
 
 @router.get("/recommended/", response_model=RecommendedOpponentsResponse)
 async def recommended_opponents(
-    limit: int = Query(default=10),
+    limit: int = Query(default=10, ge=1, le=50),
     db: AsyncSession = Depends(get_db),
     player: Player = Depends(get_current_player),
 ):

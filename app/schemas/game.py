@@ -1,18 +1,18 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 Platform = Literal["playstation", "xbox", "pc", "mobile"]
 
 
 class CreateGameRequest(BaseModel):
-    name: str
+    name: str = Field(min_length=1, max_length=100)
     platform: Platform
 
 
 class UpdateGameRequest(BaseModel):
-    name: str | None = None
+    name: str | None = Field(default=None, min_length=1, max_length=100)
     platform: Platform | None = None
     is_active: bool | None = None
 

@@ -1,11 +1,11 @@
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class FindOpponentsRequest(BaseModel):
     game_id: UUID
-    rating_range: int = 200
+    rating_range: int = Field(default=200, ge=0, le=2000)
 
 
 class QuickMatchRequest(BaseModel):
