@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     SECRET_KEY: str = Field(min_length=32)
     DEBUG: bool = False
     ALLOWED_HOSTS: str = ""
+    # Comma-separated browser origins allowed to call the API, or "*" for any.
+    CORS_ORIGINS: str = "*"
     DATABASE_URL: str = "sqlite+aiosqlite:///./db.sqlite3"
 
     # Outgoing email (password reset codes). Leave SMTP_HOST empty to disable sending.
@@ -16,8 +18,12 @@ class Settings(BaseSettings):
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
-    SMTP_FROM: str = "Duel Domain <no-reply@dueldomain.com>"
+    SMTP_FROM: str = "Duel Domain <no-reply@duel-domain.com>"
     SMTP_USE_TLS: bool = True
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        return [o.strip().rstrip("/") for o in self.CORS_ORIGINS.split(",") if o.strip()]
 
     @property
     def allowed_hosts_list(self) -> list[str]:

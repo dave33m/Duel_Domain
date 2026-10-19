@@ -139,3 +139,8 @@ async def test_admin_cannot_deactivate_self(admin):
 async def _user_id(admin, acct) -> str:
     users = (await admin.get("/auth/users/")).json()["users"]
     return next(u["id"] for u in users if u["username"] == acct.username)
+
+
+async def test_cors_origins_parse_from_env(monkeypatch):
+    monkeypatch.setenv("CORS_ORIGINS", "https://duel-domain.com/, https://www.duel-domain.com")
+    assert Settings(_env_file=None).cors_origins_list == ["https://duel-domain.com", "https://www.duel-domain.com"]

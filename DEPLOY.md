@@ -3,10 +3,13 @@
 The API runs in Docker (uvicorn, no pm2) via `docker-compose.yml`. Production and
 staging share one VPS as two compose projects:
 
-| Environment | Branch    | Folder on VPS                    | Compose project       | Port |
-|-------------|-----------|----------------------------------|-----------------------|------|
-| Production  | `main`    | `/home/deploy/Duel_Domain`         | `duel-domain`         | 8000 |
-| Staging     | `staging` | `/home/deploy/Duel_Domain-staging` | `duel-domain-staging` | 8001 |
+| Environment | URL                                   | Branch    | Folder on VPS                      | Compose project       | Local port |
+|-------------|---------------------------------------|-----------|------------------------------------|-----------------------|------------|
+| Production  | https://api.duel-domain.com         | `main`    | `/home/deploy/Duel_Domain`         | `duel-domain`         | 8000       |
+| Staging     | https://staging-api.duel-domain.com | `staging` | `/home/deploy/Duel_Domain-staging` | `duel-domain-staging` | 8001       |
+
+The API containers listen on `127.0.0.1` only. Caddy (`/opt/caddy`, set up by
+`scripts/setup_caddy.sh`) serves both over HTTPS and renews certificates automatically.
 
 Migrations (`alembic upgrade head`) run automatically each time the container starts.
 The SQLite database lives in each project's `data` Docker volume, so it survives rebuilds.
@@ -30,11 +33,29 @@ to add on GitHub and the private key for the `VPS_SSH_KEY` secret. Add both, the
 script again. The second run clones both branches, writes a `.env` with a random
 `SECRET_KEY` for each, and starts the containers.
 
+## HTTPS and domains
+
+DNS for `duel-domain.com` is managed in Vercel (Domains -> duel-domain.com -> DNS Records).
+The API needs two A records pointing at the VPS:
+
+| Type | Name          | Value            |
+|------|---------------|------------------|
+| A    | `api`         | `104.207.70.132` |
+| A    | `staging-api` | `104.207.70.132` |
+
+Then, once the records resolve, run as root on the VPS:
+
+```sh
+sh /root/setup_caddy.sh
+```
+
 ## Configuration
 
 Each environment's `.env` (see `.env.example`) must set `SECRET_KEY` (32+ characters);
 the app refuses to start without it. Password reset emails need the `SMTP_*` settings;
-until `SMTP_HOST` is set, reset codes are not sent. After editing `.env`, apply it with
+until `SMTP_HOST` is set, reset codes are not sent. `CORS_ORIGINS` lists the frontend
+origins allowed to call the API (e.g. `https://duel-domain.com,https://www.duel-domain.com`);
+it defaults to `*`. After editing `.env`, apply it with
 `docker compose -p <project> up -d`.
 
 ## Day-to-day commands (on the VPS, as `deploy`)

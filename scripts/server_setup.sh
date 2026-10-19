@@ -38,10 +38,11 @@ if [ ! -f "$DEPLOY_HOME/.ssh/id_ed25519" ]; then
 fi
 as_deploy 'ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null; sort -u -o ~/.ssh/known_hosts ~/.ssh/known_hosts'
 
-echo "==> Opening firewall: SSH, 8000 (production), 8001 (staging)"
+# The API ports stay on localhost; scripts/setup_caddy.sh serves them over HTTPS on 80/443.
+echo "==> Opening firewall: SSH, HTTP, HTTPS"
 ufw allow OpenSSH
-ufw allow 8000/tcp
-ufw allow 8001/tcp
+ufw allow 80/tcp
+ufw allow 443/tcp
 ufw --force enable
 
 if ! as_deploy "git ls-remote $REPO_SSH >/dev/null 2>&1"; then
@@ -89,3 +90,4 @@ setup_env "$DEPLOY_HOME/Duel_Domain-staging" staging 8001 duel-domain-staging
 
 echo
 echo "Done. Check: curl http://localhost:8000/health/ and http://localhost:8001/health/"
+echo "Next: point the API domains at this server and run scripts/setup_caddy.sh for HTTPS."
