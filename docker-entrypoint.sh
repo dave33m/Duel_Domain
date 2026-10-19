@@ -4,6 +4,9 @@ set -e
 # Apply any pending migrations before the API starts serving.
 alembic upgrade head
 
+# One-time move of data from the old SQLite database, if it's still there.
+python -m scripts.import_sqlite
+
 # The port is only reachable through the local reverse proxy (see docker-compose.yml), so
 # trust its X-Forwarded-For header; otherwise every user shares the proxy's IP and the
 # rate limiter throttles them all together.

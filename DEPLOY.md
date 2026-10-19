@@ -11,8 +11,13 @@ staging share one VPS as two compose projects:
 The API containers listen on `127.0.0.1` only. Caddy (`/opt/caddy`, set up by
 `scripts/setup_caddy.sh`) serves both over HTTPS and renews certificates automatically.
 
-Migrations (`alembic upgrade head`) run automatically each time the container starts.
-The SQLite database lives in each project's `data` Docker volume, so it survives rebuilds.
+Each environment has its own Postgres 17 container (`db`) with data in its `pgdata` volume,
+so it survives rebuilds. Postgres publishes no port; only the API container can reach it.
+Migrations (`alembic upgrade head`) run automatically each time the API container starts.
+
+The API previously used SQLite. On first start with Postgres, the old database in the
+`data` volume is imported automatically (`scripts/import_sqlite.py`) and then renamed to
+`db.sqlite3.imported-<timestamp>`, which is kept as a backup.
 
 ## Automatic deploys
 
@@ -51,8 +56,8 @@ sh /root/setup_caddy.sh
 
 ## Configuration
 
-Each environment's `.env` (see `.env.example`) must set `SECRET_KEY` (32+ characters);
-the app refuses to start without it. Password reset emails need the `SMTP_*` settings;
+Each environment's `.env` (see `.env.example`) must set `SECRET_KEY` (32+ characters) and
+`POSTGRES_PASSWORD`; neither container starts without them. Password reset emails need the `SMTP_*` settings;
 until `SMTP_HOST` is set, reset codes are not sent. `CORS_ORIGINS` lists the frontend
 origins allowed to call the API (e.g. `https://duel-domain.com,https://www.duel-domain.com`);
 it defaults to `*`. After editing `.env`, apply it with
@@ -70,18 +75,30 @@ docker compose -p duel-domain exec api python -m scripts.make_admin you@example.
 
 Use `-p duel-domain-staging` inside `~/Duel_Domain-staging` for staging.
 
-## Moving to a new server
+## Backups
 
-Back up the database from the old server, then restore it on the new one before starting:
+`scripts/backup_db.sh` dumps an environment's database to `~/backups/<project>/` and deletes
+dumps older than 14 days. `server_setup.sh` schedules it nightly via the `deploy` user's
+crontab (`crontab -l` to see it); output goes to `~/backups/backup.log`. Run one by hand:
 
 ```sh
-# old server
-docker compose -p duel-domain cp api:/app/data/db.sqlite3 ./db-backup.sqlite3
-# new server (after setup)
-docker compose -p duel-domain cp ./db-backup.sqlite3 api:/app/data/db.sqlite3
-docker compose -p duel-domain exec -u root api chown app:app /app/data/db.sqlite3
-docker compose -p duel-domain restart api
+sh ~/Duel_Domain/scripts/backup_db.sh duel-domain ~/Duel_Domain
 ```
+
+Restore a dump (replaces the current data):
+
+```sh
+cd ~/Duel_Domain
+docker compose -p duel-domain exec -T db pg_restore -U duel -d duel_domain --clean --if-exists < ~/backups/duel-domain/<file>.dump
+```
+
+The dumps live on the same VPS, so also copy them somewhere else now and then, e.g. from
+your PC: `scp -r deploy@104.207.70.132:backups ./duel-domain-backups`.
+
+## Moving to a new server
+
+Take a fresh backup on the old server, run the setup on the new one, copy the dump across,
+and restore it with the command above.
 
 ## Running locally
 

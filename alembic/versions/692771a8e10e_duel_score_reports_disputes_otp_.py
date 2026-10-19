@@ -34,7 +34,7 @@ def upgrade() -> None:
     # Results half-submitted under the old one-score format can't be compared with the new
     # full-scoreline reports, so in-flight duels start their submissions over.
     op.execute(
-        "UPDATE duels SET challenger_submitted = 0, opponent_submitted = 0, "
+        "UPDATE duels SET challenger_submitted = false, opponent_submitted = false, "
         "challenger_score = NULL, opponent_score = NULL WHERE status = 'accepted'"
     )
     op.execute("UPDATE duels SET status = 'accepted' WHERE status = 'in_progress'")
