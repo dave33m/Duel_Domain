@@ -18,20 +18,22 @@ jobs:
           pip install -r requirements.txt
       - name: App import check
         run: python -c "from app.main import app"
+      - name: Docker build check
+        run: docker build -t duel-domain-ci .
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to droplet
+      - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.DROPLET_HOST }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.DROPLET_SSH_KEY }}
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
           script: |
+            set -e
             cd ~/Duel_Domain-staging
             git pull origin staging
-            ./venv/bin/pip install -r requirements.txt
-            ./venv/bin/alembic upgrade head
-            pm2 restart duel-domain-staging
+            docker compose -p duel-domain-staging up -d --build --remove-orphans
+            docker image prune -f
