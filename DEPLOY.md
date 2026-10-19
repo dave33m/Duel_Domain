@@ -30,6 +30,13 @@ to add on GitHub and the private key for the `VPS_SSH_KEY` secret. Add both, the
 script again. The second run clones both branches, writes a `.env` with a random
 `SECRET_KEY` for each, and starts the containers.
 
+## Configuration
+
+Each environment's `.env` (see `.env.example`) must set `SECRET_KEY` (32+ characters);
+the app refuses to start without it. Password reset emails need the `SMTP_*` settings;
+until `SMTP_HOST` is set, reset codes are not sent. After editing `.env`, apply it with
+`docker compose -p <project> up -d`.
+
 ## Day-to-day commands (on the VPS, as `deploy`)
 
 ```sh
@@ -60,6 +67,13 @@ docker compose -p duel-domain restart api
 ```sh
 cp .env.example .env   # then set SECRET_KEY
 docker compose up --build
+```
+
+Tests:
+
+```sh
+pip install -r requirements-dev.txt
+pytest
 ```
 
 API: http://localhost:8000/swagger/

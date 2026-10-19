@@ -1,23 +1,20 @@
-from typing import Literal
-from uuid import UUID
+from typing import Annotated
 
 from pydantic import BaseModel, EmailStr, Field
+
+Username = Annotated[str, Field(min_length=3, max_length=30, pattern=r"^[A-Za-z0-9_.-]+$")]
+Password = Annotated[str, Field(min_length=8, max_length=72)]
 
 
 class SignupRequest(BaseModel):
     email: EmailStr
-    username: str = Field(max_length=150)
-    password: str
+    username: Username
+    password: Password
 
 
 class SigninRequest(BaseModel):
     email: EmailStr
-    password: str
-
-
-class SendOTPRequest(BaseModel):
-    user_id: UUID
-    otp_type: Literal["password_reset"] = "password_reset"
+    password: str = Field(max_length=72)
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -25,9 +22,9 @@ class ForgotPasswordRequest(BaseModel):
 
 
 class ResetPasswordRequest(BaseModel):
-    user_id: UUID
-    otp: str = Field(max_length=6)
-    new_password: str
+    email: EmailStr
+    otp: str = Field(min_length=6, max_length=6, pattern=r"^\d{6}$")
+    new_password: Password
 
 
 class MessageResponse(BaseModel):
@@ -40,15 +37,11 @@ class SigninResponse(BaseModel):
     email: str
 
 
-class ForgotPasswordResponse(BaseModel):
-    message: str
-    user_id: str
-
-
 class UserAdminOut(BaseModel):
     id: str
     username: str
     email: str
+    is_active: bool
     player_id: str | None
     rating: int
     wins: int

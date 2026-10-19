@@ -36,9 +36,7 @@ async def list_games(platform: str | None = Query(default=None), is_active: bool
 
 
 @router.get("/search/", response_model=GameListResponse)
-async def search_games(q: str = Query(...), platform: str | None = Query(default=None), db: AsyncSession = Depends(get_db)):
-    if not q:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Query parameter required")
+async def search_games(q: str = Query(..., min_length=1, max_length=100), platform: str | None = Query(default=None), db: AsyncSession = Depends(get_db)):
     games = await GameService.search_games(db, q, platform)
     return {"games": [{"id": str(g.id), "name": g.name, "platform": g.platform, "is_active": g.is_active} for g in games]}
 

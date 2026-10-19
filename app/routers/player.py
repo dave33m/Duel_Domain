@@ -11,6 +11,7 @@ from app.schemas.player import (
     PlayerProfileResponse,
     PlayerSearchResponse,
     PlayerStatsResponse,
+    PublicPlayerProfileResponse,
     UpdateProfileRequest,
 )
 from app.services.player_service import PlayerService
@@ -21,21 +22,19 @@ router = APIRouter(prefix="/player", tags=["player"])
 @router.get("/me/", response_model=PlayerProfileResponse)
 async def my_profile(db: AsyncSession = Depends(get_db), player: Player = Depends(get_current_player)):
     try:
-        return await PlayerService.get_profile(db, player.id)
+        return await PlayerService.get_profile(db, player.id, include_email=True)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.get("/leaderboard/", response_model=LeaderboardResponse)
-async def leaderboard(limit: int = Query(default=50), db: AsyncSession = Depends(get_db)):
+async def leaderboard(limit: int = Query(default=50, ge=1, le=100), db: AsyncSession = Depends(get_db)):
     entries = await PlayerService.get_leaderboard(db, limit)
     return {"leaderboard": entries}
 
 
 @router.get("/search/", response_model=PlayerSearchResponse)
-async def search_players(q: str = Query(...), db: AsyncSession = Depends(get_db)):
-    if not q:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Query parameter required")
+async def search_players(q: str = Query(..., min_length=1, max_length=50), db: AsyncSession = Depends(get_db)):
     players = await PlayerService.search_players(db, q)
     return {"players": players}
 
@@ -60,7 +59,7 @@ async def update_profile(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.get("/{player_id}/", response_model=PlayerProfileResponse)
+@router.get("/{player_id}/", response_model=PublicPlayerProfileResponse)
 async def get_profile(player_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     try:
         return await PlayerService.get_profile(db, player_id)

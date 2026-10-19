@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, String, Uuid
+from sqlalchemy import Boolean, DateTime, Integer, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -18,5 +18,7 @@ class User(Base):
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     date_joined: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    # Embedded in every token; bumping it (on password reset) revokes all existing tokens.
+    token_version: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
     player: Mapped["Player"] = relationship(back_populates="user", uselist=False, cascade="all, delete-orphan")
