@@ -1,0 +1,24 @@
+# Production and staging run from the same file as separate compose projects:
+#   docker compose -p duel-domain up -d --build          (APP_PORT=8000 in .env)
+#   docker compose -p duel-domain-staging up -d --build  (APP_PORT=8001 in .env)
+# Each project gets its own container and its own "data" volume (the SQLite DB).
+
+services:
+  api:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-sqlite+aiosqlite:////app/data/db.sqlite3}
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    volumes:
+      - data:/app/data
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  data:

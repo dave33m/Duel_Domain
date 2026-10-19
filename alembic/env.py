@@ -4,17 +4,27 @@ from pathlib import Path
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
+from sqlalchemy.engine import make_url
 
 from alembic import context
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from app.core.config import settings
 from app.db.base import Base
 import app.models  # noqa: F401 registers all models on Base.metadata
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+
+# Migrate the same database the app uses. Alembic runs synchronously, so swap
+# the async driver (e.g. sqlite+aiosqlite) for the backend's default sync one.
+_db_url = make_url(settings.DATABASE_URL)
+_db_url = _db_url.set(drivername=_db_url.get_backend_name())
+config.set_main_option(
+    "sqlalchemy.url", _db_url.render_as_string(hide_password=False).replace("%", "%%")
+)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
