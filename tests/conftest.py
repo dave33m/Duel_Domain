@@ -19,6 +19,7 @@ from app.db.base import Base  # noqa: E402
 from app.db.session import AsyncSessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models.user import User  # noqa: E402
+from app.services.email_service import EmailService  # noqa: E402
 
 limiter.enabled = False
 
@@ -31,6 +32,27 @@ async def reset_db():
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
     yield
+
+
+class Outbox(list):
+    """Emails the app tried to send during a test."""
+
+    def to(self, address: str, template: str | None = None) -> list[dict]:
+        return [m for m in self if address in m["recipients"] and template in (None, m["template"])]
+
+    def code_for(self, address: str, template: str) -> str:
+        return self.to(address, template)[-1]["context"]["code"]
+
+
+@pytest.fixture(autouse=True)
+def outbox(monkeypatch) -> Outbox:
+    box = Outbox()
+
+    def fake_queue(recipients, subject, template, context):
+        box.append({"recipients": recipients, "subject": subject, "template": template, "context": context})
+
+    monkeypatch.setattr(EmailService, "queue", staticmethod(fake_queue))
+    return box
 
 
 @pytest.fixture

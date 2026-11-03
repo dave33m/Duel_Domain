@@ -5,21 +5,7 @@ from app.core.config import Settings
 from app.services import otp_service
 from tests.conftest import PASSWORD
 
-
-@pytest.fixture
-def sent_codes(monkeypatch):
-    """Captures reset codes instead of emailing them."""
-    sent = []
-
-    async def fake_send(to, subject, body):
-        sent.append((to, body))
-
-    monkeypatch.setattr(otp_service.EmailService, "send", fake_send)
-    return sent
-
-
-def _code_from(body: str) -> str:
-    return next(word.rstrip(".") for word in body.split() if word.rstrip(".").isdigit() and len(word.rstrip(".")) == 6)
+RESET = "password_reset.html"
 
 
 async def test_secret_key_is_required(monkeypatch):
@@ -67,7 +53,7 @@ async def test_send_otp_endpoint_is_gone(client):
     assert r.status_code == 404
 
 
-async def test_forgot_password_does_not_reveal_accounts(client, make_account, sent_codes):
+async def test_forgot_password_does_not_reveal_accounts(client, make_account, outbox):
     acct = await make_account("alice")
     known = await client.post("/auth/forgot-password/", json={"email": acct.email})
     unknown = await client.post("/auth/forgot-password/", json={"email": "nobody@example.com"})
@@ -75,15 +61,15 @@ async def test_forgot_password_does_not_reveal_accounts(client, make_account, se
     assert known.status_code == unknown.status_code == 200
     assert known.json() == unknown.json()
     assert "user_id" not in known.json()
-    assert [to for to, _ in sent_codes] == [acct.email]
+    assert [m["recipients"] for m in outbox if m["template"] == RESET] == [[acct.email]]
 
 
-async def test_password_reset_flow_revokes_old_tokens(client, make_account, sent_codes):
+async def test_password_reset_flow_revokes_old_tokens(client, make_account, outbox):
     acct = await make_account("alice")
     assert (await acct.get("/player/me/")).status_code == 200
 
     await client.post("/auth/forgot-password/", json={"email": acct.email})
-    code = _code_from(sent_codes[-1][1])
+    code = outbox.code_for(acct.email, RESET)
 
     new_password = "Brand-New-Passw0rd"
     r = await client.post("/auth/reset-password/", json={"email": acct.email, "otp": code, "new_password": new_password})
@@ -101,10 +87,10 @@ async def test_password_reset_flow_revokes_old_tokens(client, make_account, sent
     assert r.status_code == 400
 
 
-async def test_reset_code_is_burned_after_too_many_wrong_guesses(client, make_account, sent_codes):
+async def test_reset_code_is_burned_after_too_many_wrong_guesses(client, make_account, outbox):
     acct = await make_account("alice")
     await client.post("/auth/forgot-password/", json={"email": acct.email})
-    code = _code_from(sent_codes[-1][1])
+    code = outbox.code_for(acct.email, RESET)
     wrong = "000000" if code != "000000" else "111111"
 
     for _ in range(otp_service.MAX_ATTEMPTS):

@@ -57,11 +57,28 @@ sh /root/setup_caddy.sh
 ## Configuration
 
 Each environment's `.env` (see `.env.example`) must set `SECRET_KEY` (32+ characters) and
-`POSTGRES_PASSWORD`; neither container starts without them. Password reset emails need the `SMTP_*` settings;
-until `SMTP_HOST` is set, reset codes are not sent. `CORS_ORIGINS` lists the frontend
+`POSTGRES_PASSWORD`; neither container starts without them. `CORS_ORIGINS` lists the frontend
 origins allowed to call the API (e.g. `https://duel-domain.com,https://www.duel-domain.com`);
 it defaults to `*`. After editing `.env`, apply it with
 `docker compose -p <project> up -d`.
+
+## Email (Resend)
+
+The API sends verification codes, welcome emails, password reset/change codes, "password
+changed" notices and new-signup alerts with fastapi-mail through Resend's SMTP relay
+(`smtp.resend.com`, user `resend`, password = API key). Templates are in
+`app/templates/email/`. Setup:
+
+1. In Resend, add the domain `duel-domain.com` and add the DNS records it shows (DKIM, SPF,
+   and an MX record for bounces) in Vercel under Domains -> duel-domain.com -> DNS Records.
+   Wait until Resend shows the domain as verified.
+2. Create an API key with "Sending access" for that domain.
+3. In each environment's `.env`, set `RESEND_API_KEY` (and `ADMIN_NOTIFY_EMAILS` for signup
+   alerts), then apply with `docker compose -p <project> up -d`.
+
+Without `RESEND_API_KEY` nothing is sent; the API logs a warning instead. Resend only sends;
+to *receive* mail at `support@duel-domain.com`, set up a mailbox or forwarding for the domain
+separately (e.g. Zoho Mail, Google Workspace or ImprovMX).
 
 ## Day-to-day commands (on the VPS, as `deploy`)
 

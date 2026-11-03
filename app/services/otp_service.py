@@ -8,17 +8,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.time import utcnow
 from app.models.otp import OTP
 from app.models.user import User
-from app.services.email_service import EmailService
 
-OTP_TTL_MINUTES = 10
+EMAIL_VERIFICATION = "email_verification"
+PASSWORD_RESET = "password_reset"
+PASSWORD_CHANGE = "password_change"
+
+# How long each kind of code stays valid.
+OTP_TTL_MINUTES = {EMAIL_VERIFICATION: 60, PASSWORD_RESET: 10, PASSWORD_CHANGE: 10}
 MAX_ATTEMPTS = 5
 
 
 class OTPService:
     @staticmethod
-    async def generate_otp(db: AsyncSession, user: User, otp_type: str = "password_reset") -> str:
+    async def generate_otp(db: AsyncSession, user: User, otp_type: str) -> str:
+        """Issues a fresh code (replacing any live one of the same type); the caller emails it."""
         code = f"{secrets.randbelow(1_000_000):06d}"
-        expires_at = utcnow() + timedelta(minutes=OTP_TTL_MINUTES)
+        expires_at = utcnow() + timedelta(minutes=OTP_TTL_MINUTES[otp_type])
 
         await db.execute(
             update(OTP)
@@ -28,18 +33,10 @@ class OTPService:
 
         db.add(OTP(user_id=user.id, code=code, otp_type=otp_type, expires_at=expires_at))
         await db.commit()
-
-        await EmailService.send(
-            user.email,
-            "Your Duel Domain password reset code",
-            f"Your password reset code is {code}. It expires in {OTP_TTL_MINUTES} minutes.\n\n"
-            "If you didn't request this, you can ignore this email.",
-        )
-
         return code
 
     @staticmethod
-    async def validate_otp(db: AsyncSession, user: User, code: str, otp_type: str = "password_reset") -> bool:
+    async def validate_otp(db: AsyncSession, user: User, code: str, otp_type: str) -> bool:
         """Checks the user's single live code; too many wrong guesses burn it."""
         result = await db.execute(
             select(OTP).where(

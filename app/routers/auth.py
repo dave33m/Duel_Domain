@@ -3,18 +3,23 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_admin
+from app.core.deps import get_current_admin, get_current_user
 from app.core.limiter import limiter
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.auth import (
+    ChangePasswordRequest,
+    ConfirmPasswordChangeRequest,
     ForgotPasswordRequest,
     MessageResponse,
+    PasswordChangedResponse,
+    ResendVerificationRequest,
     ResetPasswordRequest,
     SigninRequest,
     SigninResponse,
     SignupRequest,
     UsersListResponse,
+    VerifyEmailRequest,
 )
 from app.services.auth_service import AuthService
 
@@ -37,6 +42,51 @@ async def signin(request: Request, body: SigninRequest, db: AsyncSession = Depen
         return await AuthService.signin(db, body.email, body.password)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+
+
+@router.post("/verify-email/", response_model=MessageResponse)
+@limiter.limit("10/minute")
+async def verify_email(request: Request, body: VerifyEmailRequest, db: AsyncSession = Depends(get_db)):
+    try:
+        return await AuthService.verify_email(db, body.email, body.code)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/resend-verification/", response_model=MessageResponse)
+@limiter.limit("3/minute")
+async def resend_verification(request: Request, body: ResendVerificationRequest, db: AsyncSession = Depends(get_db)):
+    return await AuthService.resend_verification(db, body.email)
+
+
+@router.post("/change-password/request/", response_model=MessageResponse)
+@limiter.limit("5/minute")
+async def request_password_change(
+    request: Request,
+    body: ChangePasswordRequest,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Checks the current password and emails a confirmation code."""
+    try:
+        return await AuthService.request_password_change(db, user, body.current_password)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/change-password/confirm/", response_model=PasswordChangedResponse)
+@limiter.limit("10/minute")
+async def confirm_password_change(
+    request: Request,
+    body: ConfirmPasswordChangeRequest,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Sets the new password; all other sessions are signed out and a fresh token is returned."""
+    try:
+        return await AuthService.confirm_password_change(db, user, body.code, body.new_password)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post("/forgot-password/", response_model=MessageResponse)

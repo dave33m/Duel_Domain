@@ -13,17 +13,26 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "*"
     DATABASE_URL: str = "sqlite+aiosqlite:///./db.sqlite3"
 
-    # Outgoing email (password reset codes). Leave SMTP_HOST empty to disable sending.
-    SMTP_HOST: str = ""
-    SMTP_PORT: int = 587
-    SMTP_USER: str = ""
-    SMTP_PASSWORD: str = ""
-    SMTP_FROM: str = "Duel Domain <no-reply@duel-domain.com>"
-    SMTP_USE_TLS: bool = True
+    # Email is sent with fastapi-mail through Resend's SMTP relay; the Resend API key is the
+    # SMTP password. Leave RESEND_API_KEY empty to disable sending (emails are only logged).
+    RESEND_API_KEY: str = ""
+    MAIL_SERVER: str = "smtp.resend.com"
+    MAIL_PORT: int = 587
+    MAIL_FROM: str = "duel@duel-domain.com"
+    MAIL_FROM_NAME: str = "Duel Domain"
+    MAIL_REPLY_TO: str = "support@duel-domain.com"
+    # Comma-separated addresses told about every new signup; empty to disable.
+    ADMIN_NOTIFY_EMAILS: str = ""
+    # Used for links inside emails.
+    FRONTEND_URL: str = "https://duel-domain.com"
 
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip().rstrip("/") for o in self.CORS_ORIGINS.split(",") if o.strip()]
+
+    @property
+    def admin_notify_emails_list(self) -> list[str]:
+        return [e.strip() for e in self.ADMIN_NOTIFY_EMAILS.split(",") if e.strip()]
 
     @property
     def allowed_hosts_list(self) -> list[str]:

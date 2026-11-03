@@ -8,6 +8,7 @@ alembic==1.18.5
 pydantic==2.13.4
 pydantic-settings==2.14.2
 email-validator==2.3.0
+fastapi-mail==1.6.8
 PyJWT==2.11.0
 bcrypt==5.0.0
 slowapi==0.1.10
