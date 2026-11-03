@@ -2,10 +2,13 @@ fastapi==0.139.2
 uvicorn[standard]==0.51.0
 sqlalchemy[asyncio]==2.0.51
 aiosqlite==0.22.1
+asyncpg==0.31.0
+psycopg[binary]==3.3.2
 alembic==1.18.5
 pydantic==2.13.4
 pydantic-settings==2.14.2
 email-validator==2.3.0
+fastapi-mail==1.6.8
 PyJWT==2.11.0
 bcrypt==5.0.0
 slowapi==0.1.10

@@ -3,8 +3,9 @@ import tempfile
 from pathlib import Path
 
 # Configure the app before anything imports it: the engine and settings are module-level.
+# Tests use a throwaway SQLite file unless TEST_DATABASE_URL points at a (disposable!) Postgres.
 _DB_PATH = Path(tempfile.mkdtemp()) / "test.db"
-os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{_DB_PATH.as_posix()}"
+os.environ["DATABASE_URL"] = os.environ.get("TEST_DATABASE_URL") or f"sqlite+aiosqlite:///{_DB_PATH.as_posix()}"
 os.environ["SECRET_KEY"] = "test-secret-key-that-is-long-enough-for-hs256"
 os.environ["DEBUG"] = "False"
 
@@ -18,6 +19,7 @@ from app.db.base import Base  # noqa: E402
 from app.db.session import AsyncSessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models.user import User  # noqa: E402
+from app.services.email_service import EmailService  # noqa: E402
 
 limiter.enabled = False
 
@@ -30,6 +32,27 @@ async def reset_db():
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
     yield
+
+
+class Outbox(list):
+    """Emails the app tried to send during a test."""
+
+    def to(self, address: str, template: str | None = None) -> list[dict]:
+        return [m for m in self if address in m["recipients"] and template in (None, m["template"])]
+
+    def code_for(self, address: str, template: str) -> str:
+        return self.to(address, template)[-1]["context"]["code"]
+
+
+@pytest.fixture(autouse=True)
+def outbox(monkeypatch) -> Outbox:
+    box = Outbox()
+
+    def fake_queue(recipients, subject, template, context):
+        box.append({"recipients": recipients, "subject": subject, "template": template, "context": context})
+
+    monkeypatch.setattr(EmailService, "queue", staticmethod(fake_queue))
+    return box
 
 
 @pytest.fixture

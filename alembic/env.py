@@ -19,9 +19,12 @@ import app.models  # noqa: F401 registers all models on Base.metadata
 config = context.config
 
 # Migrate the same database the app uses. Alembic runs synchronously, so swap
-# the async driver (e.g. sqlite+aiosqlite) for the backend's default sync one.
-_db_url = make_url(settings.DATABASE_URL)
-_db_url = _db_url.set(drivername=_db_url.get_backend_name())
+# the async driver (sqlite+aiosqlite, postgresql+asyncpg) for a sync one.
+_SYNC_DRIVERS = {"postgresql": "postgresql+psycopg"}
+# A caller can point Alembic at another database via config.attributes["database_url"].
+_db_url = make_url(config.attributes.get("database_url") or settings.DATABASE_URL)
+_backend = _db_url.get_backend_name()
+_db_url = _db_url.set(drivername=_SYNC_DRIVERS.get(_backend, _backend))
 config.set_main_option(
     "sqlalchemy.url", _db_url.render_as_string(hide_password=False).replace("%", "%%")
 )

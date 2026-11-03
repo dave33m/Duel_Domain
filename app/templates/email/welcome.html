@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Welcome to Duel Domain{% endblock %}
+{% block content %}
+<p style="margin:0 0 12px;">Hi {{ username }},</p>
+<p style="margin:0 0 12px;">Your email is verified and your account is ready. Welcome to Duel Domain!</p>
+<p style="margin:0 0 12px;">Here's how to get started:</p>
+<ul style="margin:0 0 20px;padding-left:20px;">
+  <li>Pick a game and create a challenge, or use quick match to find an opponent.</li>
+  <li>After your match, both players report the score.</li>
+  <li>Win duels to climb the leaderboard.</li>
+</ul>
+<p style="margin:0;"><a href="{{ frontend_url }}" style="display:inline-block;background:#ff4d4f;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:6px;">Start dueling</a></p>
+{% endblock %}

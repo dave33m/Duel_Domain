@@ -41,6 +41,7 @@ class PlayerService:
         }
         if include_email:
             profile["email"] = player.user.email
+            profile["email_verified"] = player.user.is_email_verified
         return profile
 
     @staticmethod

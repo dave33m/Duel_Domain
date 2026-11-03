@@ -24,6 +24,7 @@ class PlayerProfileResponse(BaseModel):
     id: str
     username: str
     email: str
+    email_verified: bool
     wins: int
     losses: int
     rating: int

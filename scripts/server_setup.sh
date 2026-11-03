@@ -75,6 +75,7 @@ setup_env() {
     if [ ! -f "$1/.env" ]; then
         cat > "$1/.env" <<EOF
 SECRET_KEY=$(openssl rand -hex 32)
+POSTGRES_PASSWORD=$(openssl rand -hex 24)
 DEBUG=False
 ALLOWED_HOSTS=
 APP_PORT=$3
@@ -84,6 +85,11 @@ EOF
     fi
     echo "==> Starting $4 on port $3"
     as_deploy "cd $1 && docker compose -p $4 up -d --build"
+
+    # Nightly database backup at 03:15 (prod) / 03:45 (staging), kept for 14 days.
+    minute=15; [ "$2" = staging ] && minute=45
+    job="$minute 3 * * * sh $1/scripts/backup_db.sh $4 $1 >> $DEPLOY_HOME/backups/backup.log 2>&1"
+    as_deploy "mkdir -p ~/backups; (crontab -l 2>/dev/null | grep -v 'backup_db.sh $4 '; echo '$job') | crontab -"
 }
 setup_env "$DEPLOY_HOME/Duel_Domain" main 8000 duel-domain
 setup_env "$DEPLOY_HOME/Duel_Domain-staging" staging 8001 duel-domain-staging
