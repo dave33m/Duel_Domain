@@ -67,6 +67,15 @@ async def update_profile(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
+@router.get("/me/avatar/", response_model=AvatarResponse)
+async def my_avatar(db: AsyncSession = Depends(get_db), player: Player = Depends(get_current_player)):
+    """Avatar selection state for the signed-in user: use avatar_selected to pick the next screen."""
+    try:
+        return await PlayerService.get_avatar(db, player.id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
 @router.put("/me/avatar/", response_model=AvatarResponse)
 async def update_avatar(
     body: AvatarUpdateRequest,
