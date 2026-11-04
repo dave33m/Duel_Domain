@@ -104,6 +104,13 @@ class PlayerService:
         return await PlayerService.get_profile(db, player_id, include_email=True)
 
     @staticmethod
+    async def get_avatar(db: AsyncSession, player_id: uuid.UUID) -> dict:
+        player = await PlayerService._get_player(db, player_id)
+        if player is None:
+            raise ValueError("Player not found")
+        return PlayerService._avatar_fields(player)
+
+    @staticmethod
     async def set_avatar(db: AsyncSession, player_id: uuid.UUID, avatar: str | None) -> dict:
         player = await PlayerService._get_player(db, player_id)
         if player is None:

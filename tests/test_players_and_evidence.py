@@ -103,6 +103,27 @@ async def test_avatar_defaults_and_selection(make_account, client):
     assert signin.json()["avatar_selected"] is True
 
 
+async def test_avatar_state_endpoint(make_account):
+    alice = await make_account("alice")
+
+    r = await alice.get("/player/me/avatar/")
+    assert r.status_code == 200, r.text
+    assert r.json() == {
+        "avatar": DEFAULT_AVATAR,
+        "is_dicebear_avatar": False,
+        "avatar_selected": False,
+    }
+
+    await alice.put("/player/me/avatar/", json={"avatar": DICEBEAR_AVATAR})
+    r = await alice.get("/player/me/avatar/")
+    assert r.json() == {
+        "avatar": DICEBEAR_AVATAR,
+        "is_dicebear_avatar": True,
+        "avatar_selected": True,
+    }
+    assert (await alice.client.get("/player/me/avatar/")).status_code == 401
+
+
 async def test_avatar_validation_and_clearing(make_account):
     alice = await make_account("alice")
 
