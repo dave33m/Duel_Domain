@@ -4,6 +4,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.avatars import avatar_payload
 from app.core.security import (
     DUMMY_PASSWORD_HASH,
     create_access_token,
@@ -12,6 +13,7 @@ from app.core.security import (
     validate_password_strength,
     verify_password,
 )
+from app.models.avatar import Avatar
 from app.models.player import Player
 from app.models.user import User
 from app.services.email_service import EmailService
@@ -28,7 +30,11 @@ VERIFICATION_SENT_MESSAGE = "If that account still needs verifying, a new verifi
 
 
 async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
-    result = await db.execute(select(User).where(func.lower(User.email) == normalize_email(email)))
+    result = await db.execute(
+        select(User)
+        .where(func.lower(User.email) == normalize_email(email))
+        .options(selectinload(User.avatar))
+    )
     return result.scalars().first()
 
 
@@ -56,6 +62,7 @@ class AuthService:
         await db.flush()
 
         db.add(Player(id=uuid.uuid4(), user_id=user.id))
+        db.add(Avatar(user_id=user.id, selected=False))
         await db.commit()
 
         code = await OTPService.generate_otp(db, user, EMAIL_VERIFICATION)
@@ -109,6 +116,10 @@ class AuthService:
             "username": user.username,
             "email": user.email,
             "email_verified": user.is_email_verified,
+            **avatar_payload(
+                user.avatar.avatar if user.avatar else None,
+                bool(user.avatar and user.avatar.selected),
+            ),
         }
 
     @staticmethod

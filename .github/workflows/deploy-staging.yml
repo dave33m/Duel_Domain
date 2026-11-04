@@ -57,6 +57,9 @@ jobs:
           script: |
             set -e
             cd ~/Duel_Domain-staging
-            git pull origin staging
+            # Pull over HTTPS: the repo is public, so no server-side deploy key is needed.
+            git remote set-url origin https://github.com/dave33m/Duel_Domain.git
+            git fetch --prune origin staging
+            git reset --hard origin/staging
             docker compose -p duel-domain-staging up -d --build --remove-orphans
             docker image prune -f

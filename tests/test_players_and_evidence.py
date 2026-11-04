@@ -67,6 +67,75 @@ async def test_screenshot_validation_never_claims_success(make_account):
     assert r.json()["valid"] is False
 
 
+DICEBEAR_AVATAR = "dicebear/img/ryg5"
+DEFAULT_AVATAR = "$lib/assets/avatar_default.png"
+
+
+async def test_avatar_defaults_and_selection(make_account, client):
+    alice = await make_account("alice")
+
+    me = (await alice.get("/player/me/")).json()
+    assert me["avatar"] == DEFAULT_AVATAR
+    assert me["is_dicebear_avatar"] is False
+    assert me["avatar_selected"] is False
+
+    r = await alice.put("/player/me/avatar/", json={"avatar": DICEBEAR_AVATAR})
+    assert r.status_code == 200, r.text
+    assert r.json() == {
+        "avatar": DICEBEAR_AVATAR,
+        "is_dicebear_avatar": True,
+        "avatar_selected": True,
+    }
+
+    me = (await alice.get("/player/me/")).json()
+    assert me["avatar"] == DICEBEAR_AVATAR
+    assert me["is_dicebear_avatar"] is True
+    assert me["avatar_selected"] is True
+
+    public = (await client.get(f"/player/{alice.player_id}/")).json()
+    assert public["avatar"] == DICEBEAR_AVATAR
+
+    signin = await client.post(
+        "/auth/signin/", json={"email": alice.email, "password": "Sturdy-Passw0rd!"}
+    )
+    assert signin.json()["avatar"] == DICEBEAR_AVATAR
+    assert signin.json()["is_dicebear_avatar"] is True
+    assert signin.json()["avatar_selected"] is True
+
+
+async def test_avatar_validation_and_clearing(make_account):
+    alice = await make_account("alice")
+
+    for bad in ["../../etc/passwd", "https://example.com/a.png", "dicebear/img/"]:
+        assert (await alice.put("/player/me/avatar/", json={"avatar": bad})).status_code == 422
+
+    await alice.put("/player/me/avatar/", json={"avatar": DICEBEAR_AVATAR})
+    r = await alice.put("/player/me/avatar/", json={"avatar": None})
+    assert r.status_code == 200, r.text
+    assert r.json() == {
+        "avatar": DEFAULT_AVATAR,
+        "is_dicebear_avatar": False,
+        "avatar_selected": False,
+    }
+    me = (await alice.get("/player/me/")).json()
+    assert me["avatar"] == DEFAULT_AVATAR
+    assert me["avatar_selected"] is False
+
+
+async def test_profile_update_can_set_avatar_and_leaves_it_untouched(make_account):
+    alice = await make_account("alice")
+
+    r = await alice.put("/player/me/update/", json={"avatar": DICEBEAR_AVATAR})
+    assert r.status_code == 200, r.text
+    assert r.json()["avatar"] == DICEBEAR_AVATAR
+    assert r.json()["is_dicebear_avatar"] is True
+    assert r.json()["username"] == "alice"
+
+    r = await alice.put("/player/me/update/", json={"username": "alice_2"})
+    assert r.json()["username"] == "alice_2"
+    assert r.json()["avatar"] == DICEBEAR_AVATAR
+
+
 async def test_performance_uses_real_history(make_account, game):
     alice, bob = await make_account("alice"), await make_account("bob")
     assert (await alice.get("/ai/performance/")).json()["message"] == "Not enough data for analysis"

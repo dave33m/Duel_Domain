@@ -23,3 +23,6 @@ class User(Base):
     token_version: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
     player: Mapped["Player"] = relationship(back_populates="user", uselist=False, cascade="all, delete-orphan")
+    avatar: Mapped["Avatar | None"] = relationship(
+        back_populates="user", uselist=False, cascade="all, delete-orphan"
+    )
