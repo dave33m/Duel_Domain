@@ -7,6 +7,8 @@ from app.core.deps import get_current_player
 from app.db.session import get_db
 from app.models.player import Player
 from app.schemas.player import (
+    AvatarResponse,
+    AvatarUpdateRequest,
     LeaderboardResponse,
     PlayerProfileResponse,
     PlayerSearchResponse,
@@ -54,7 +56,26 @@ async def update_profile(
     player: Player = Depends(get_current_player),
 ):
     try:
-        return await PlayerService.update_profile(db, player.id, body.username)
+        return await PlayerService.update_profile(
+            db,
+            player.id,
+            body.username,
+            avatar=body.avatar,
+            update_avatar="avatar" in body.model_fields_set,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.put("/me/avatar/", response_model=AvatarResponse)
+async def update_avatar(
+    body: AvatarUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+    player: Player = Depends(get_current_player),
+):
+    """Pick a DiceBear avatar after signup; send null to fall back to the default."""
+    try:
+        return await PlayerService.set_avatar(db, player.id, body.avatar)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 

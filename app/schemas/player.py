@@ -1,15 +1,37 @@
 from datetime import datetime
+from typing import Annotated
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
+from app.core.avatars import DICEBEAR_AVATAR_PATTERN
 from app.schemas.auth import Username
+
+AvatarValue = Annotated[str, Field(pattern=DICEBEAR_AVATAR_PATTERN)]
+
+
+class AvatarInfo(BaseModel):
+    # Resolved for display: the chosen DiceBear path or the bundled default image.
+    avatar: str
+    is_dicebear_avatar: bool
+    # False means the user still has to go through avatar selection.
+    avatar_selected: bool
+
+
+class AvatarUpdateRequest(BaseModel):
+    # Null clears the selection and falls back to the default avatar.
+    avatar: AvatarValue | None = None
+
+
+class AvatarResponse(AvatarInfo):
+    pass
 
 
 class UpdateProfileRequest(BaseModel):
     username: Username | None = None
+    avatar: AvatarValue | None = None
 
 
-class PublicPlayerProfileResponse(BaseModel):
+class PublicPlayerProfileResponse(AvatarInfo):
     id: str
     username: str
     wins: int
@@ -20,7 +42,7 @@ class PublicPlayerProfileResponse(BaseModel):
     joined: datetime
 
 
-class PlayerProfileResponse(BaseModel):
+class PlayerProfileResponse(AvatarInfo):
     id: str
     username: str
     email: str
@@ -40,7 +62,7 @@ class PlayerStatsResponse(BaseModel):
     win_rate: float
 
 
-class LeaderboardEntry(BaseModel):
+class LeaderboardEntry(AvatarInfo):
     rank: int
     id: str
     username: str
@@ -54,7 +76,7 @@ class LeaderboardResponse(BaseModel):
     leaderboard: list[LeaderboardEntry]
 
 
-class PlayerSearchResult(BaseModel):
+class PlayerSearchResult(AvatarInfo):
     id: str
     username: str
     rating: int
