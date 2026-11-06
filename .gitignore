@@ -9,4 +9,5 @@ db.sqlite3
 .vscode/
 DuelVenv/
 .pytest_cache/
+uploads/
 ci.db

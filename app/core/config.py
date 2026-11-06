@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     # Used for links inside emails.
     FRONTEND_URL: str = "https://duel-domain.com"
 
+    # Uploaded files (game banners) and the per-file size limit.
+    UPLOAD_DIR: str = "uploads"
+    MAX_BANNER_BYTES: int = 5 * 1024 * 1024
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip().rstrip("/") for o in self.CORS_ORIGINS.split(",") if o.strip()]

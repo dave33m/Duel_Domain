@@ -1,11 +1,26 @@
 from datetime import datetime
+from pathlib import Path
 from typing import Annotated, Literal
+from urllib.parse import urlsplit
 
-from pydantic import AnyUrl, BaseModel, Field, UrlConstraints
+from pydantic import AfterValidator, BaseModel, Field
 
 Platform = Literal["playstation", "xbox", "pc", "mobile"]
 GameType = Literal["mmo", "rpg", "mmorpg", "sports"]
-BannerUrl = Annotated[AnyUrl, UrlConstraints(max_length=500, allowed_schemes=["http", "https"])]
+
+
+def _validate_banner(value: str) -> str:
+    """Accept an http(s) URL or a path returned by the banner upload endpoint."""
+    value = value.strip()
+    if value.startswith("/uploads/"):
+        return value
+    parts = urlsplit(value)
+    if parts.scheme not in ("http", "https") or not parts.netloc:
+        raise ValueError("Banner must be an http(s) URL or an /uploads/ path")
+    return value
+
+
+BannerRef = Annotated[str, Field(max_length=500), AfterValidator(_validate_banner)]
 
 
 class MatchMode(BaseModel):
@@ -16,7 +31,7 @@ class MatchMode(BaseModel):
 class CreateGameRequest(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     platform: Platform
-    banner: BannerUrl = Field(description="http(s) link to the game banner image")
+    banner: BannerRef = Field(description="http(s) URL or the path returned by /game/banner/upload/")
     game_type: GameType
     match_modes: list[MatchMode] = Field(min_length=1, max_length=3)
 
@@ -24,7 +39,7 @@ class CreateGameRequest(BaseModel):
 class UpdateGameRequest(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=100)
     platform: Platform | None = None
-    banner: BannerUrl | None = None
+    banner: BannerRef | None = None
     game_type: GameType | None = None
     match_modes: list[MatchMode] | None = Field(default=None, min_length=1, max_length=3)
     is_active: bool | None = None
@@ -68,6 +83,14 @@ class GameUpdatedResponse(BaseModel):
 
 class GameListResponse(BaseModel):
     games: list[GameOut]
+
+
+class BannerUploadResponse(BaseModel):
+    message: str
+    # Relative path to store on a game.
+    banner: str
+    # Absolute URL for previewing right after upload.
+    url: str
 
 
 class MessageResponse(BaseModel):

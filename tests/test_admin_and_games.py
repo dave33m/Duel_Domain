@@ -83,9 +83,7 @@ async def test_admin_can_create_update_and_delete_games(client, admin, make_acco
 
 
 async def test_game_fields_are_validated(admin):
-    too_many_modes = [
-        {"name": f"Mode {n}", "description": "X"} for n in range(4)
-    ]
+    too_many_modes = [{"name": f"Mode {n}", "description": "X"} for n in range(4)]
 
     for body in [
         {**GAME_PAYLOAD, "game_type": "fps"},
@@ -95,3 +93,34 @@ async def test_game_fields_are_validated(admin):
         {**GAME_PAYLOAD, "platform": "nintendo"},
     ]:
         assert (await admin.post("/game/create/", json=body)).status_code == 422
+
+
+PNG_BYTES = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
+
+
+async def test_admin_can_upload_a_banner_and_use_it_on_a_game(client, admin, make_account):
+    alice = await make_account("alice")
+    files = {"file": ("banner.png", PNG_BYTES, "image/png")}
+
+    r = await admin.post("/game/banner/upload/", files=files)
+    assert r.status_code == 201, r.text
+    uploaded = r.json()
+    assert uploaded["banner"].startswith("/uploads/banners/")
+    assert uploaded["banner"].endswith(".png")
+    assert uploaded["url"].endswith(uploaded["banner"])
+
+    # The file is served and its path is accepted when creating a game.
+    assert (await client.get(uploaded["banner"])).status_code == 200
+    r = await admin.post(
+        "/game/create/",
+        json={**GAME_PAYLOAD, "name": "Uploaded Banner Game", "banner": uploaded["banner"]},
+    )
+    assert r.status_code == 201, r.text
+    assert r.json()["banner"] == uploaded["banner"]
+
+    # Only admins may upload, and only real images are accepted.
+    assert (await alice.post("/game/banner/upload/", files=files)).status_code == 403
+    fake = {"file": ("banner.png", b"<script>alert(1)</script>", "image/png")}
+    assert (await admin.post("/game/banner/upload/", files=fake)).status_code == 400
+    empty = {"file": ("banner.png", b"", "image/png")}
+    assert (await admin.post("/game/banner/upload/", files=empty)).status_code == 400

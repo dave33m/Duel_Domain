@@ -13,7 +13,7 @@ RUN pip install -r requirements.txt
 COPY . .
 
 RUN useradd --create-home --uid 1000 app \
-    && mkdir -p /app/data \
+    && mkdir -p /app/data /app/uploads \
     && chown -R app:app /app \
     && chmod +x /app/docker-entrypoint.sh
 USER app

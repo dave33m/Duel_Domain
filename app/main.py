@@ -1,5 +1,8 @@
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -36,6 +39,11 @@ app.include_router(matchmaking.router)
 app.include_router(evidence.router)
 app.include_router(dispute.router)
 app.include_router(ai.router)
+
+# Uploaded banners live on a volume and are served directly; the directory must exist
+# before StaticFiles is mounted.
+Path(settings.UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
 
 @app.get("/health/")
