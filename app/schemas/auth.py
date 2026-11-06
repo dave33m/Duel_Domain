@@ -60,6 +60,7 @@ class SigninResponse(BaseModel):
     username: str
     email: str
     email_verified: bool
+    is_admin: bool
     # False means the user still has to go through avatar selection.
     avatar: str
     is_dicebear_avatar: bool

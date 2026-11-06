@@ -98,7 +98,7 @@ class AuthService:
         return {"message": VERIFICATION_SENT_MESSAGE}
 
     @staticmethod
-    async def signin(db: AsyncSession, email: str, password: str) -> dict:
+    async def signin(db: AsyncSession, email: str, password: str, require_admin: bool = False) -> dict:
         user = await get_user_by_email(db, email)
         if user is None:
             verify_password(password, DUMMY_PASSWORD_HASH)
@@ -110,12 +110,16 @@ class AuthService:
         if not user.is_active:
             raise ValueError("This account has been disabled")
 
+        if require_admin and not user.is_admin:
+            raise PermissionError("This account does not have admin access")
+
         token = create_access_token(str(user.id), user.username, user.email, user.token_version)
         return {
             "token": token,
             "username": user.username,
             "email": user.email,
             "email_verified": user.is_email_verified,
+            "is_admin": user.is_admin,
             **avatar_payload(
                 user.avatar.avatar if user.avatar else None,
                 bool(user.avatar and user.avatar.selected),
