@@ -6,6 +6,8 @@ from pathlib import Path
 # Tests use a throwaway SQLite file unless TEST_DATABASE_URL points at a (disposable!) Postgres.
 _DB_PATH = Path(tempfile.mkdtemp()) / "test.db"
 os.environ["DATABASE_URL"] = os.environ.get("TEST_DATABASE_URL") or f"sqlite+aiosqlite:///{_DB_PATH.as_posix()}"
+_UPLOAD_DIR = Path(tempfile.mkdtemp()) / "uploads"
+os.environ["UPLOAD_DIR"] = _UPLOAD_DIR.as_posix()
 os.environ["SECRET_KEY"] = "test-secret-key-that-is-long-enough-for-hs256"
 os.environ["DEBUG"] = "False"
 

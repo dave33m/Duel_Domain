@@ -13,3 +13,4 @@ data/
 tests/
 pytest.ini
 .pytest_cache/
+uploads/

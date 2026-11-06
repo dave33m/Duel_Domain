@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_admin
@@ -8,6 +8,7 @@ from app.db.session import get_db
 from app.models.game import Game
 from app.models.user import User
 from app.schemas.game import (
+    BannerUploadResponse,
     CreateGameRequest,
     GameCreatedResponse,
     GameDetailOut,
@@ -19,6 +20,7 @@ from app.schemas.game import (
     UpdateGameRequest,
 )
 from app.services.game_service import GameService
+from app.services.upload_service import UploadService
 
 router = APIRouter(prefix="/game", tags=["game"])
 
@@ -31,6 +33,25 @@ def _game_fields(game: Game) -> dict:
         "game_type": game.game_type,
         "match_modes": game.match_modes or [],
         "is_active": game.is_active,
+    }
+
+
+@router.post("/banner/upload/", response_model=BannerUploadResponse, status_code=status.HTTP_201_CREATED)
+async def upload_banner(
+    request: Request,
+    file: UploadFile = File(...),
+    admin: User = Depends(get_current_admin),
+):
+    """Upload a game banner; pass the returned `banner` path to create/update a game."""
+    try:
+        path = await UploadService.save_banner(file)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    return {
+        "message": "Banner uploaded",
+        "banner": path,
+        "url": f"{str(request.base_url).rstrip('/')}{path}",
     }
 
 

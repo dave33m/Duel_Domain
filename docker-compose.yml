@@ -19,6 +19,8 @@ services:
     volumes:
       # Former SQLite database; imported into Postgres once on first start, then kept as a backup.
       - data:/app/data
+      # Uploaded game banners survive rebuilds and are served from /uploads.
+      - uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -48,3 +50,4 @@ services:
 volumes:
   data:
   pgdata:
+  uploads:
