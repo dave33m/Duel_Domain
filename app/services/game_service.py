@@ -8,22 +8,49 @@ from app.models.game import Game
 
 class GameService:
     @staticmethod
-    async def create_game(db: AsyncSession, name: str, platform: str) -> Game:
-        existing = await db.execute(select(Game).where(func.lower(Game.name) == name.strip().lower(), Game.platform == platform))
-        if existing.scalar_one_or_none():
+    async def create_game(
+        db: AsyncSession,
+        name: str,
+        platform: str,
+        banner: str | None = None,
+        game_type: str | None = None,
+        match_modes: list[dict] | None = None,
+    ) -> Game:
+        existing = await db.execute(
+            select(Game).where(
+                func.lower(Game.name) == name.strip().lower(),
+                Game.platform == platform,
+                Game.is_active == True,  # noqa: E712
+            )
+        )
+        if existing.scalars().first():
             raise ValueError("Game already exists for this platform")
 
-        game = Game(id=uuid.uuid4(), name=name.strip(), platform=platform)
+        game = Game(
+            id=uuid.uuid4(),
+            name=name.strip(),
+            platform=platform,
+            banner=banner,
+            game_type=game_type,
+            match_modes=match_modes or [],
+        )
         db.add(game)
         await db.commit()
         await db.refresh(game)
         return game
 
     @staticmethod
-    async def list_games(db: AsyncSession, platform: str | None = None, is_active: bool = True) -> list[Game]:
+    async def list_games(
+        db: AsyncSession,
+        platform: str | None = None,
+        game_type: str | None = None,
+        is_active: bool = True,
+    ) -> list[Game]:
         query = select(Game).where(Game.is_active == is_active)
         if platform:
             query = query.where(Game.platform == platform)
+        if game_type:
+            query = query.where(Game.game_type == game_type)
         result = await db.execute(query.order_by(Game.name))
         return list(result.scalars().all())
 
@@ -41,13 +68,22 @@ class GameService:
         game_id: uuid.UUID,
         name: str | None = None,
         platform: str | None = None,
+        banner: str | None = None,
+        game_type: str | None = None,
+        match_modes: list[dict] | None = None,
         is_active: bool | None = None,
     ) -> Game:
         game = await GameService.get_game(db, game_id)
         if name:
-            game.name = name
+            game.name = name.strip()
         if platform:
             game.platform = platform
+        if banner:
+            game.banner = banner
+        if game_type:
+            game.game_type = game_type
+        if match_modes is not None:
+            game.match_modes = match_modes
         if is_active is not None:
             game.is_active = is_active
         await db.commit()

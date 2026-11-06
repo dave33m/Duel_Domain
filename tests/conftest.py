@@ -112,6 +112,15 @@ async def admin(make_account):
 
 @pytest.fixture
 async def game(admin):
-    r = await admin.post("/game/create/", json={"name": "FIFA 26", "platform": "playstation"})
+    r = await admin.post(
+        "/game/create/",
+        json={
+            "name": "FIFA 26",
+            "platform": "playstation",
+            "banner": "https://cdn.example.com/fifa-26.png",
+            "game_type": "sports",
+            "match_modes": [{"name": "1 v 1", "description": "Head to head"}],
+        },
+    )
     assert r.status_code == 201, r.text
     return r.json()["game_id"]

@@ -44,6 +44,18 @@ async def signin(request: Request, body: SigninRequest, db: AsyncSession = Depen
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
 
 
+@router.post("/admin/signin/", response_model=SigninResponse)
+@limiter.limit("10/minute")
+async def admin_signin(request: Request, body: SigninRequest, db: AsyncSession = Depends(get_db)):
+    """Sign-in for the admin dashboard; users without the admin flag are rejected."""
+    try:
+        return await AuthService.signin(db, body.email, body.password, require_admin=True)
+    except PermissionError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+
+
 @router.post("/verify-email/", response_model=MessageResponse)
 @limiter.limit("10/minute")
 async def verify_email(request: Request, body: VerifyEmailRequest, db: AsyncSession = Depends(get_db)):
