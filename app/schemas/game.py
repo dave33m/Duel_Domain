@@ -1,7 +1,7 @@
 from datetime import datetime
-from pathlib import Path
 from typing import Annotated, Literal
 from urllib.parse import urlsplit
+from uuid import UUID
 
 from pydantic import AfterValidator, BaseModel, Field
 
@@ -23,9 +23,17 @@ def _validate_banner(value: str) -> str:
 BannerRef = Annotated[str, Field(max_length=500), AfterValidator(_validate_banner)]
 
 
-class MatchMode(BaseModel):
+class MatchModeInput(BaseModel):
+    # Optional on update: return the id to keep it; a new id is assigned when omitted.
+    id: UUID | None = None
     name: str = Field(min_length=1, max_length=50, examples=["1 v 1"])
     description: str = Field(min_length=1, max_length=500)
+
+
+class MatchModeOut(BaseModel):
+    id: str
+    name: str
+    description: str
 
 
 class CreateGameRequest(BaseModel):
@@ -33,7 +41,8 @@ class CreateGameRequest(BaseModel):
     platform: Platform
     banner: BannerRef = Field(description="http(s) URL or the path returned by /game/banner/upload/")
     game_type: GameType
-    match_modes: list[MatchMode] = Field(min_length=1, max_length=3)
+    match_description: str | None = Field(default=None, max_length=500)
+    match_modes: list[MatchModeInput] = Field(min_length=1, max_length=3)
 
 
 class UpdateGameRequest(BaseModel):
@@ -41,7 +50,8 @@ class UpdateGameRequest(BaseModel):
     platform: Platform | None = None
     banner: BannerRef | None = None
     game_type: GameType | None = None
-    match_modes: list[MatchMode] | None = Field(default=None, min_length=1, max_length=3)
+    match_description: str | None = Field(default=None, max_length=500)
+    match_modes: list[MatchModeInput] | None = Field(default=None, min_length=1, max_length=3)
     is_active: bool | None = None
 
 
@@ -51,7 +61,8 @@ class GameOut(BaseModel):
     platform: str
     banner: str | None
     game_type: str | None
-    match_modes: list[MatchMode]
+    match_description: str | None
+    match_modes: list[MatchModeOut]
     is_active: bool
 
 
@@ -66,7 +77,8 @@ class GameCreatedResponse(BaseModel):
     platform: str
     banner: str | None
     game_type: str | None
-    match_modes: list[MatchMode]
+    match_description: str | None
+    match_modes: list[MatchModeOut]
     is_active: bool
 
 
@@ -77,7 +89,8 @@ class GameUpdatedResponse(BaseModel):
     platform: str
     banner: str | None
     game_type: str | None
-    match_modes: list[MatchMode]
+    match_description: str | None
+    match_modes: list[MatchModeOut]
     is_active: bool
 
 

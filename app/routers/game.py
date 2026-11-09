@@ -31,6 +31,7 @@ def _game_fields(game: Game) -> dict:
         "platform": game.platform,
         "banner": game.banner,
         "game_type": game.game_type,
+        "match_description": game.match_description,
         "match_modes": game.match_modes or [],
         "is_active": game.is_active,
     }
@@ -68,7 +69,8 @@ async def create_game(
             body.platform,
             banner=str(body.banner),
             game_type=body.game_type,
-            match_modes=[mode.model_dump() for mode in body.match_modes],
+            match_description=body.match_description,
+            match_modes=[mode.model_dump(mode="json") for mode in body.match_modes],
         )
         return {"message": "Game created successfully", "game_id": str(game.id), **_game_fields(game)}
     except ValueError as e:
@@ -120,7 +122,8 @@ async def update_game(
             platform=body.platform,
             banner=str(body.banner) if body.banner else None,
             game_type=body.game_type,
-            match_modes=[mode.model_dump() for mode in body.match_modes] if body.match_modes is not None else None,
+            match_description=body.match_description,
+            match_modes=[mode.model_dump(mode="json") for mode in body.match_modes] if body.match_modes is not None else None,
             is_active=body.is_active,
         )
         return {"message": "Game updated successfully", "id": str(game.id), **_game_fields(game)}
