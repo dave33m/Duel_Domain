@@ -19,7 +19,8 @@ class Game(Base):
     platform: Mapped[str] = mapped_column(String(20))
     banner: Mapped[str | None] = mapped_column(String(500), nullable=True)
     game_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    # [{"name": "1 v 1", "description": "..."}]; limited to three in the API for now.
+    match_description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # [{"id": "<uuid>", "name": "1 v 1", "description": "..."}]; limited to three for now.
     match_modes: Mapped[list[dict] | None] = mapped_column(JSON, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

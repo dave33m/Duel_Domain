@@ -1,3 +1,5 @@
+import uuid
+
 PASSWORD = "Sturdy-Passw0rd!"
 
 GAME_PAYLOAD = {
@@ -5,6 +7,7 @@ GAME_PAYLOAD = {
     "platform": "playstation",
     "banner": "https://cdn.example.com/fifa-26.png",
     "game_type": "sports",
+    "match_description": "Best of 3, 90-minute matches",
     "match_modes": [
         {"name": "1 v 1", "description": "Head to head"},
         {"name": "2 v 2", "description": "Two players per side"},
@@ -43,7 +46,10 @@ async def test_admin_can_create_update_and_delete_games(client, admin, make_acco
     assert created["name"] == "FIFA 26"
     assert created["banner"] == GAME_PAYLOAD["banner"]
     assert created["game_type"] == "sports"
+    assert created["match_description"] == GAME_PAYLOAD["match_description"]
     assert [m["name"] for m in created["match_modes"]] == ["1 v 1", "2 v 2"]
+    assert all(uuid.UUID(m["id"]) for m in created["match_modes"])
+    original_ids = {m["name"]: m["id"] for m in created["match_modes"]}
 
     # Non-admins cannot use any of the admin endpoints.
     assert (await alice.post("/game/create/", json=GAME_PAYLOAD)).status_code == 403
@@ -67,6 +73,7 @@ async def test_admin_can_create_update_and_delete_games(client, admin, make_acco
             "name": "FIFA 27",
             "platform": "xbox",
             "game_type": "mmorpg",
+            "match_description": "Updated match description",
             "match_modes": [{"name": "3 v 3", "description": "Team mode"}],
         },
     )
@@ -75,11 +82,65 @@ async def test_admin_can_create_update_and_delete_games(client, admin, make_acco
     assert updated["name"] == "FIFA 27"
     assert updated["platform"] == "xbox"
     assert updated["game_type"] == "mmorpg"
-    assert updated["match_modes"] == [{"name": "3 v 3", "description": "Team mode"}]
+    assert updated["match_description"] == "Updated match description"
+    assert updated["match_modes"][0]["name"] == "3 v 3"
+    assert updated["match_modes"][0]["id"] != original_ids["1 v 1"]
 
     assert (await admin.delete(f"/game/{game_id}/delete/")).status_code == 200
     assert (await client.get("/game/list/")).json()["games"] == []
     assert (await client.get(f"/game/{game_id}/")).json()["is_active"] is False
+
+
+async def test_match_mode_ids_are_stable_across_updates(admin):
+    created = (await admin.post("/game/create/", json={**GAME_PAYLOAD, "name": "ID Game"})).json()
+    game_id = created["game_id"]
+    ids = {m["name"]: m["id"] for m in created["match_modes"]}
+
+    # Updating names/descriptions without sending ids keeps each mode's id.
+    r = await admin.put(
+        f"/game/{game_id}/update/",
+        json={
+            "match_description": "New description",
+            "match_modes": [
+                {"name": "1 v 1", "description": "Updated head to head"},
+                {"name": "2 v 2", "description": "Updated teams"},
+            ],
+        },
+    )
+    assert r.status_code == 200, r.text
+    assert {m["name"]: m["id"] for m in r.json()["match_modes"]} == ids
+    assert r.json()["match_description"] == "New description"
+
+    # Sending an existing id keeps it even when the name changes.
+    r = await admin.put(
+        f"/game/{game_id}/update/",
+        json={
+            "match_modes": [
+                {"id": ids["1 v 1"], "name": "Solo", "description": "1 player each"},
+                {"id": ids["2 v 2"], "name": "Duo", "description": "2 players each"},
+            ],
+        },
+    )
+    assert {m["name"]: m["id"] for m in r.json()["match_modes"]} == {
+        "Solo": ids["1 v 1"],
+        "Duo": ids["2 v 2"],
+    }
+
+    # A newly added mode gets a new id; existing ids stay put.
+    r = await admin.put(
+        f"/game/{game_id}/update/",
+        json={
+            "match_modes": [
+                {"id": ids["1 v 1"], "name": "Solo", "description": "1 player each"},
+                {"id": ids["2 v 2"], "name": "Duo", "description": "2 players each"},
+                {"name": "3 v 3", "description": "Three players each"},
+            ],
+        },
+    )
+    modes = {m["name"]: m["id"] for m in r.json()["match_modes"]}
+    assert modes["Solo"] == ids["1 v 1"]
+    assert modes["Duo"] == ids["2 v 2"]
+    assert modes["3 v 3"] not in ids.values()
 
 
 async def test_game_fields_are_validated(admin):
